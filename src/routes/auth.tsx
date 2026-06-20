@@ -60,20 +60,27 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/dashboard" },
+          options: {
+            emailRedirectTo: window.location.origin + "/dashboard",
+            data: { username, display_name: username },
+          },
         });
         if (error) throw error;
-        if (data.user) {
+        if (data.session && data.user) {
           const { error: pErr } = await supabase.from("profiles").insert({
             id: data.user.id,
             username,
             display_name: username,
           });
           if (pErr) throw pErr;
+          toast.success("Account created. Welcome.");
+          router.invalidate();
+          navigate({ to: "/dashboard", replace: true });
+        } else {
+          window.localStorage.setItem("linq_pending_username", username);
+          toast.success("Account created. Check your email, then sign in.");
+          setMode("signin");
         }
-        toast.success("Account created. Welcome.");
-        router.invalidate();
-        navigate({ to: "/dashboard", replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
