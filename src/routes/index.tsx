@@ -37,10 +37,6 @@ function Index() {
 
       <main className="mx-auto max-w-6xl px-6">
         <section className="py-24 md:py-36">
-          <p className="mb-6 inline-flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-1 font-mono text-xs text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
-            v1.0 — now in open beta
-          </p>
           <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
             One link. <span className="text-muted-foreground">Everything you are.</span>
           </h1>
@@ -64,11 +60,6 @@ function Index() {
             >
               See an example →
             </Link>
-          </div>
-
-          <div className="mt-10 flex items-center gap-3 font-mono text-sm text-muted-foreground">
-            <span className="rounded-sm border border-border bg-card px-2 py-1">linq.lol/</span>
-            <span className="text-foreground">yourname</span>
           </div>
         </section>
 
