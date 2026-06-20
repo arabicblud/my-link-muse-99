@@ -37,6 +37,7 @@ function Index() {
 
       <main className="mx-auto max-w-6xl px-6">
         <section className="py-24 md:py-36">
+          <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
             One link. <span className="text-muted-foreground">Everything you are.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
