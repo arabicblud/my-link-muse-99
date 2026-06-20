@@ -9,9 +9,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { LinkPagePreview } from "@/components/link-page-preview";
-import { FONT_OPTIONS, BUTTON_STYLES, THEME_PRESETS, type Profile, type LinkRow } from "@/lib/link-page";
+import {
+  FONT_OPTIONS,
+  BUTTON_STYLES,
+  THEME_PRESETS,
+  BACKGROUND_EFFECTS,
+  ENTRANCE_ANIMATIONS,
+  type Profile,
+  type LinkRow,
+} from "@/lib/link-page";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — linq" }] }),
@@ -127,6 +135,10 @@ function Dashboard() {
               <TabsTrigger value="links">Links</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="theme">Theme</TabsTrigger>
+              <TabsTrigger value="customize">Customize</TabsTrigger>
+              <TabsTrigger value="premium">
+                <Sparkles className="mr-1 h-3 w-3" /> Premium
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="links" className="mt-4">
@@ -137,6 +149,12 @@ function Dashboard() {
             </TabsContent>
             <TabsContent value="theme" className="mt-4">
               <ThemeEditor profile={profile} onSaved={() => profileQ.refetch()} />
+            </TabsContent>
+            <TabsContent value="customize" className="mt-4">
+              <CustomizeEditor profile={profile} onSaved={() => profileQ.refetch()} />
+            </TabsContent>
+            <TabsContent value="premium" className="mt-4">
+              <PremiumPanel profile={profile} onChange={() => profileQ.refetch()} />
             </TabsContent>
           </Tabs>
         </div>
