@@ -26,7 +26,6 @@ const profileQuery = (username: string) =>
   });
 
 export const Route = createFileRoute("/$username")({
-  ssr: false,
   loader: ({ context, params }) => context.queryClient.ensureQueryData(profileQuery(params.username)),
   head: ({ params }) => ({
     meta: [
