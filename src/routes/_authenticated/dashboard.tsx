@@ -383,6 +383,212 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
   );
 }
 
+function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () => void }) {
+  const [tagline, setTagline] = useState(profile.tagline ?? "");
+  const [typewriter, setTypewriter] = useState(profile.typewriter_enabled);
+  const [pageTitle, setPageTitle] = useState(profile.page_title ?? "");
+  const [pageDesc, setPageDesc] = useState(profile.page_description ?? "");
+  const [bgImage, setBgImage] = useState(profile.background_image_url ?? "");
+  const [audio, setAudio] = useState(profile.audio_url ?? "");
+  const [cursor, setCursor] = useState(profile.cursor_url ?? "");
+  const [effect, setEffect] = useState(profile.background_effect);
+  const [anim, setAnim] = useState(profile.entrance_animation);
+  const [opacity, setOpacity] = useState(profile.card_opacity);
+  const [blur, setBlur] = useState(profile.card_blur);
+  const [glow, setGlow] = useState(profile.icon_glow_color ?? "");
+  const [showViews, setShowViews] = useState(profile.show_views);
+
+  const premium = profile.is_premium;
+
+  const m = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          tagline: tagline || null,
+          typewriter_enabled: typewriter,
+          page_title: pageTitle || null,
+          page_description: pageDesc || null,
+          background_image_url: premium ? bgImage || null : null,
+          audio_url: premium ? audio || null : null,
+          cursor_url: premium ? cursor || null : null,
+          background_effect: effect,
+          entrance_animation: anim,
+          card_opacity: opacity,
+          card_blur: premium ? blur : 0,
+          icon_glow_color: premium ? glow || null : null,
+          show_views: showViews,
+        })
+        .eq("id", profile.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Saved");
+      onSaved();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-6 rounded-md border border-border bg-card p-6">
+      <Section title="Page metadata">
+        <Field label="Page title (browser tab)">
+          <Input value={pageTitle} onChange={(e) => setPageTitle(e.target.value)} placeholder="@yourname — links" />
+        </Field>
+        <Field label="Page description (SEO)">
+          <Input value={pageDesc} onChange={(e) => setPageDesc(e.target.value)} />
+        </Field>
+      </Section>
+
+      <Section title="Tagline">
+        <Field label="Tagline (under your name)">
+          <Input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="building things" />
+        </Field>
+        <label className="flex items-center gap-2 font-mono text-xs">
+          <Switch checked={typewriter} onCheckedChange={setTypewriter} /> Typewriter effect
+        </label>
+      </Section>
+
+      <Section title="Effects">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Background effect">
+            <select value={effect} onChange={(e) => setEffect(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm">
+              {BACKGROUND_EFFECTS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Entrance animation">
+            <select value={anim} onChange={(e) => setAnim(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm">
+              {ENTRANCE_ANIMATIONS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+            </select>
+          </Field>
+        </div>
+        <Field label={`Card opacity — ${opacity}%`}>
+          <input type="range" min={20} max={100} value={opacity} onChange={(e) => setOpacity(+e.target.value)} className="w-full" />
+        </Field>
+        <label className="flex items-center gap-2 font-mono text-xs">
+          <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
+        </label>
+      </Section>
+
+      <Section title={<span className="flex items-center gap-2">Premium customization {!premium && <Lock className="h-3 w-3" />}</span>}>
+        {!premium && (
+          <p className="rounded-sm border border-dashed border-border p-3 font-mono text-xs text-muted-foreground">
+            Unlock with a premium code in the Premium tab.
+          </p>
+        )}
+        <Field label="Background image URL">
+          <Input disabled={!premium} value={bgImage} onChange={(e) => setBgImage(e.target.value)} placeholder="https://..." />
+        </Field>
+        <Field label="Profile audio URL (mp3)">
+          <Input disabled={!premium} value={audio} onChange={(e) => setAudio(e.target.value)} placeholder="https://..." />
+        </Field>
+        <Field label="Custom cursor URL (png 32×32)">
+          <Input disabled={!premium} value={cursor} onChange={(e) => setCursor(e.target.value)} placeholder="https://..." />
+        </Field>
+        <Field label={`Card blur — ${blur}px`}>
+          <input disabled={!premium} type="range" min={0} max={20} value={blur} onChange={(e) => setBlur(+e.target.value)} className="w-full" />
+        </Field>
+        <Field label="Avatar glow color">
+          <Input disabled={!premium} value={glow} onChange={(e) => setGlow(e.target.value)} placeholder="#ff00aa" />
+        </Field>
+      </Section>
+
+      <Button onClick={() => m.mutate()} disabled={m.isPending}>
+        {m.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save customization"}
+      </Button>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3 border-b border-border pb-5 last:border-b-0 last:pb-0">
+      <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <Label className="font-mono text-xs">{label}</Label>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+function PremiumPanel({ profile, onChange }: { profile: Profile; onChange: () => void }) {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function redeem() {
+    if (!code.trim()) return;
+    setLoading(true);
+    const { data, error } = await supabase.rpc("redeem_premium_code", { _code: code.trim() });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const result = data as { ok: boolean; error?: string };
+    if (!result?.ok) {
+      const map: Record<string, string> = {
+        invalid_code: "Invalid code.",
+        already_used: "This code has already been redeemed.",
+        not_authenticated: "Sign in required.",
+      };
+      toast.error(map[result?.error ?? ""] ?? "Could not redeem code.");
+      return;
+    }
+    toast.success("Premium unlocked ✨");
+    setCode("");
+    onChange();
+  }
+
+  if (profile.is_premium) {
+    return (
+      <div className="rounded-md border border-border bg-card p-6">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          <h2 className="text-lg font-semibold">You're Premium</h2>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          All premium customization options are unlocked. Open the Customize tab to use them.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 rounded-md border border-border bg-card p-6">
+      <div>
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          <h2 className="text-lg font-semibold">Unlock Premium</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Background images, profile audio, custom cursors, card blur, avatar glow.
+        </p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+        <Input
+          placeholder="LINQ-XXXX-XXXX"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          className="font-mono"
+        />
+        <Button onClick={redeem} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Redeem"}
+        </Button>
+      </div>
+      <p className="font-mono text-xs text-muted-foreground">
+        Codes are single-use. Once redeemed they can't be used again.
+      </p>
+    </div>
+  );
+}
+
 function LinksEditor({
   profileId,
   links,
