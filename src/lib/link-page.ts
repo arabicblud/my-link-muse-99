@@ -10,6 +10,21 @@ export type Profile = {
   text_color: string;
   font_family: string;
   button_style: string;
+  is_premium: boolean;
+  background_image_url: string | null;
+  background_effect: string;
+  audio_url: string | null;
+  cursor_url: string | null;
+  page_title: string | null;
+  page_description: string | null;
+  tagline: string | null;
+  typewriter_enabled: boolean;
+  show_views: boolean;
+  view_count: number;
+  card_opacity: number;
+  card_blur: number;
+  icon_glow_color: string | null;
+  entrance_animation: string;
 };
 
 export type LinkRow = {
@@ -41,4 +56,19 @@ export const THEME_PRESETS = [
   { value: "paper", label: "Paper", bg: "#f5f1e8", text: "#1a1a1a", accent: "#1a1a1a" },
   { value: "ink", label: "Ink", bg: "#111418", text: "#e8e8e8", accent: "#9ae6b4" },
   { value: "blood", label: "Blood", bg: "#0a0000", text: "#fee", accent: "#ef4444" },
+];
+
+export const BACKGROUND_EFFECTS = [
+  { value: "none", label: "None" },
+  { value: "snow", label: "Snow" },
+  { value: "rain", label: "Rain" },
+  { value: "particles", label: "Particles" },
+  { value: "confetti", label: "Confetti" },
+];
+
+export const ENTRANCE_ANIMATIONS = [
+  { value: "fade", label: "Fade" },
+  { value: "slide-up", label: "Slide up" },
+  { value: "zoom", label: "Zoom" },
+  { value: "none", label: "None" },
 ];

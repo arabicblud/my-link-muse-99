@@ -98,7 +98,7 @@ function Dashboard() {
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground"
             >
-              linq.lol/{profile.username}
+              linq.site.je/{profile.username}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -191,7 +191,7 @@ function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void 
         <h1 className="text-xl font-semibold">Pick a username</h1>
         <p className="mt-1 text-sm text-muted-foreground">This will be your public URL.</p>
         <div className="mt-5 flex items-center rounded-sm border border-input bg-background">
-          <span className="pl-3 font-mono text-sm text-muted-foreground">linq.lol/</span>
+          <span className="pl-3 font-mono text-sm text-muted-foreground">linq.site.je/</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
