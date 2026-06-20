@@ -1,6 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LinkPagePreview } from "@/components/link-page-preview";
 import type { Profile, LinkRow } from "@/lib/link-page";
@@ -63,19 +62,6 @@ export const Route = createFileRoute("/$username")({
 function PublicProfile() {
   const { username } = Route.useParams();
   const { data } = useSuspenseQuery(profileQuery(username));
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const key = `linq_viewed_${data.profile.id}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    supabase.rpc("increment" as never, {}).catch(() => {});
-    // Best-effort increment via direct update (RLS allows public SELECT only; use a fire-and-forget upsert via edge would be cleaner).
-    supabase
-      .from("profiles")
-      .update({ view_count: data.profile.view_count + 1 })
-      .eq("id", data.profile.id)
-      .then(() => {});
-  }, [data.profile.id, data.profile.view_count]);
   return (
     <div className="min-h-screen">
       <LinkPagePreview profile={data.profile} links={data.links} />
