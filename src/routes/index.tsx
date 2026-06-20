@@ -61,7 +61,7 @@ function Index() {
               See an example →
             </Link>
           </div>
-
+        </section>
 
         <section className="grid grid-cols-1 gap-px overflow-hidden rounded-md border border-border bg-border md:grid-cols-4">
           {[
