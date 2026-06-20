@@ -164,3 +164,11 @@
     background-size: 24px 24px;
   }
 }
+
+@keyframes linq-fall {
+  0% { transform: translateY(0) translateX(0); }
+  100% { transform: translateY(120vh) translateX(20px); }
+}
+@keyframes linq-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes linq-slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes linq-zoom { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }

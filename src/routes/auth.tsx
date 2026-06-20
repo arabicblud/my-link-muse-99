@@ -146,7 +146,7 @@ function AuthPage() {
               <div>
                 <Label htmlFor="username" className="font-mono text-xs">username</Label>
                 <div className="mt-1 flex items-center rounded-sm border border-input bg-background">
-                  <span className="pl-3 font-mono text-sm text-muted-foreground">linq.lol/</span>
+                  <span className="pl-3 font-mono text-sm text-muted-foreground">linq.site.je/</span>
                   <input
                     id="username"
                     value={username}

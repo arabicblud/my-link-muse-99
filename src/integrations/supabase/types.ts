@@ -58,51 +58,117 @@ export type Database = {
           },
         ]
       }
+      premium_codes: {
+        Row: {
+          code: string
+          created_at: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accent_color: string
+          audio_url: string | null
           avatar_url: string | null
           background_color: string
+          background_effect: string
+          background_image_url: string | null
           bio: string | null
           button_style: string
+          card_blur: number
+          card_opacity: number
           created_at: string
+          cursor_url: string | null
           display_name: string | null
+          entrance_animation: string
           font_family: string
+          icon_glow_color: string | null
           id: string
+          is_premium: boolean
+          page_description: string | null
+          page_title: string | null
+          show_views: boolean
+          tagline: string | null
           text_color: string
           theme: string
+          typewriter_enabled: boolean
           updated_at: string
           username: string
+          view_count: number
         }
         Insert: {
           accent_color?: string
+          audio_url?: string | null
           avatar_url?: string | null
           background_color?: string
+          background_effect?: string
+          background_image_url?: string | null
           bio?: string | null
           button_style?: string
+          card_blur?: number
+          card_opacity?: number
           created_at?: string
+          cursor_url?: string | null
           display_name?: string | null
+          entrance_animation?: string
           font_family?: string
+          icon_glow_color?: string | null
           id: string
+          is_premium?: boolean
+          page_description?: string | null
+          page_title?: string | null
+          show_views?: boolean
+          tagline?: string | null
           text_color?: string
           theme?: string
+          typewriter_enabled?: boolean
           updated_at?: string
           username: string
+          view_count?: number
         }
         Update: {
           accent_color?: string
+          audio_url?: string | null
           avatar_url?: string | null
           background_color?: string
+          background_effect?: string
+          background_image_url?: string | null
           bio?: string | null
           button_style?: string
+          card_blur?: number
+          card_opacity?: number
           created_at?: string
+          cursor_url?: string | null
           display_name?: string | null
+          entrance_animation?: string
           font_family?: string
+          icon_glow_color?: string | null
           id?: string
+          is_premium?: boolean
+          page_description?: string | null
+          page_title?: string | null
+          show_views?: boolean
+          tagline?: string | null
           text_color?: string
           theme?: string
+          typewriter_enabled?: boolean
           updated_at?: string
           username?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -111,7 +177,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      redeem_premium_code: { Args: { _code: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

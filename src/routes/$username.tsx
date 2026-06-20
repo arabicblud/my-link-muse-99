@@ -27,13 +27,21 @@ const profileQuery = (username: string) =>
 
 export const Route = createFileRoute("/$username")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(profileQuery(params.username)),
-  head: ({ params }) => ({
-    meta: [
-      { title: `@${params.username} — linq` },
-      { name: "description", content: `${params.username}'s links on linq.` },
-      { property: "og:title", content: `@${params.username}` },
-    ],
-  }),
+  head: ({ params, loaderData }) => {
+    const p = (loaderData as { profile?: Profile } | undefined)?.profile;
+    const title = p?.page_title || `@${params.username} — linq`;
+    const desc = p?.page_description || `${params.username}'s links on linq.site.je.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "profile" },
+        ...(p?.avatar_url ? [{ property: "og:image", content: p.avatar_url }] : []),
+      ],
+    };
+  },
   component: PublicProfile,
   notFoundComponent: () => (
     <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
