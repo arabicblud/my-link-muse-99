@@ -14,7 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      links: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          is_visible: boolean
+          position: number
+          profile_id: string
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_visible?: boolean
+          position?: number
+          profile_id: string
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_visible?: boolean
+          position?: number
+          profile_id?: string
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          accent_color: string
+          avatar_url: string | null
+          background_color: string
+          bio: string | null
+          button_style: string
+          created_at: string
+          display_name: string | null
+          font_family: string
+          id: string
+          text_color: string
+          theme: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          accent_color?: string
+          avatar_url?: string | null
+          background_color?: string
+          bio?: string | null
+          button_style?: string
+          created_at?: string
+          display_name?: string | null
+          font_family?: string
+          id: string
+          text_color?: string
+          theme?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          accent_color?: string
+          avatar_url?: string | null
+          background_color?: string
+          bio?: string | null
+          button_style?: string
+          created_at?: string
+          display_name?: string | null
+          font_family?: string
+          id?: string
+          text_color?: string
+          theme?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
