@@ -20,13 +20,22 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const navigate = useNavigate();
-  const router = useRouter();
   const qc = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      setUserId(data.user?.id ?? null);
+      setAuthReady(true);
+      if (!data.user) navigate({ to: "/auth", replace: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
 
   const profileQ = useQuery({
     enabled: !!userId,
@@ -52,7 +61,7 @@ function Dashboard() {
     },
   });
 
-  if (!userId || profileQ.isLoading) {
+  if (!authReady || !userId || profileQ.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
