@@ -155,7 +155,10 @@ function Dashboard() {
 }
 
 function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem("linq_pending_username") ?? "";
+  });
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -178,6 +181,7 @@ function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void 
       return;
     }
     toast.success("Username claimed.");
+    window.localStorage.removeItem("linq_pending_username");
     onDone();
   }
 
