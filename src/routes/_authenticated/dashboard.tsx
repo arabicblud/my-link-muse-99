@@ -266,16 +266,17 @@ function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void 
   );
 }
 
-function ProfileEditor({ profile, onSaved }: { profile: Profile; onSaved: () => void }) {
+function ProfileEditor({ profile, onSaved, userId }: { profile: Profile; onSaved: () => void; userId: string }) {
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatar, setAvatar] = useState(profile.avatar_url ?? "");
+  const [location, setLocation] = useState(profile.location ?? "");
 
   const m = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName, bio, avatar_url: avatar || null })
+        .update({ display_name: displayName, bio, avatar_url: avatar || null, location: location || null })
         .eq("id", profile.id);
       if (error) throw error;
     },
@@ -294,8 +295,18 @@ function ProfileEditor({ profile, onSaved }: { profile: Profile; onSaved: () => 
           <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="mt-1" />
         </div>
         <div>
-          <Label className="font-mono text-xs">Avatar URL</Label>
-          <Input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="https://..." className="mt-1" />
+          <Label className="font-mono text-xs">Avatar</Label>
+          <div className="mt-1">
+            <AssetUpload
+              userId={userId} kind="avatar" value={avatar || null}
+              onChange={(u) => setAvatar(u ?? "")}
+              accept="image/*,.gif" label="Profile picture (image / gif)"
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="font-mono text-xs">Location (optional)</Label>
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Paris, FR" className="mt-1" />
         </div>
         <div>
           <Label className="font-mono text-xs">Bio</Label>
