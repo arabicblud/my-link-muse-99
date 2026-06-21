@@ -406,7 +406,7 @@ function TagsPanel() {
   async function create() {
     if (!slug || !name) return toast.error("Slug and name required");
     const { data, error } = await supabase.rpc("create_tag", {
-      _slug: slug, _name: name, _color: color, _icon: icon || null, _description: desc || null,
+      _slug: slug, _name: name, _color: color, _icon: icon || "", _description: desc || "",
     });
     if (error) return toast.error(error.message);
     const res = data as { ok: boolean; error?: string };
