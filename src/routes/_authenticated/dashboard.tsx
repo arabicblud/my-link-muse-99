@@ -172,6 +172,7 @@ function Dashboard() {
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="theme">Theme</TabsTrigger>
               <TabsTrigger value="customize">Customize</TabsTrigger>
+              <TabsTrigger value="tags">Tags</TabsTrigger>
               <TabsTrigger value="premium">
                 <Sparkles className="mr-1 h-3 w-3" /> Premium
               </TabsTrigger>
@@ -181,13 +182,16 @@ function Dashboard() {
               <LinksEditor profileId={userId} links={links} onChange={() => linksQ.refetch()} />
             </TabsContent>
             <TabsContent value="profile" className="mt-4">
-              <ProfileEditor profile={profile} onSaved={() => profileQ.refetch()} />
+              <ProfileEditor profile={profile} onSaved={() => profileQ.refetch()} userId={userId} />
             </TabsContent>
             <TabsContent value="theme" className="mt-4">
               <ThemeEditor profile={profile} onSaved={() => profileQ.refetch()} />
             </TabsContent>
             <TabsContent value="customize" className="mt-4">
-              <CustomizeEditor profile={profile} onSaved={() => profileQ.refetch()} />
+              <CustomizeEditor profile={profile} onSaved={() => profileQ.refetch()} userId={userId} />
+            </TabsContent>
+            <TabsContent value="tags" className="mt-4">
+              <TagsToggle profileTags={tagsQ.data ?? []} onChange={() => tagsQ.refetch()} userId={userId} />
             </TabsContent>
             <TabsContent value="premium" className="mt-4">
               <PremiumPanel profile={profile} onChange={() => profileQ.refetch()} />
@@ -199,7 +203,7 @@ function Dashboard() {
           <div className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">Live preview</div>
           <div className="overflow-hidden rounded-md border border-border" style={{ aspectRatio: "9/16" }}>
             <div className="h-full overflow-auto">
-              <LinkPagePreview profile={profile} links={links.filter((l) => l.is_visible)} />
+              <LinkPagePreview profile={profile} links={links.filter((l) => l.is_visible)} tags={visibleTagsForPreview} />
             </div>
           </div>
         </aside>
