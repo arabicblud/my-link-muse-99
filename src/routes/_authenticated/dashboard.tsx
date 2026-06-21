@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { LinkPagePreview } from "@/components/link-page-preview";
+import { AssetUpload } from "@/components/asset-upload";
 import {
   FONT_OPTIONS,
   BUTTON_STYLES,
@@ -17,9 +18,10 @@ import {
   ENTRANCE_ANIMATIONS,
   type Profile,
   type LinkRow,
+  type Tag,
 } from "@/lib/link-page";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock, Shield } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — linq" }] }),
