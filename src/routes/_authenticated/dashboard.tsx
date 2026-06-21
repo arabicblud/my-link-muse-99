@@ -112,6 +112,7 @@ function Dashboard() {
 
   const profile = profileQ.data;
   const links = linksQ.data ?? [];
+  const visibleTagsForPreview = (tagsQ.data ?? []).filter((r) => !r.hidden).map((r) => r.tag);
 
   async function signOut() {
     await qc.cancelQueries();
@@ -139,6 +140,13 @@ function Dashboard() {
             </a>
           </div>
           <div className="flex items-center gap-2">
+            {adminQ.data && (
+              <Link to="/admin">
+                <Button size="sm" variant="outline">
+                  <Shield className="h-3.5 w-3.5" /> Admin
+                </Button>
+              </Link>
+            )}
             <Button
               size="sm"
               variant="outline"
