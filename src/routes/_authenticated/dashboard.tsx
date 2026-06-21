@@ -71,6 +71,32 @@ function Dashboard() {
     },
   });
 
+  const adminQ = useQuery({
+    enabled: !!userId,
+    queryKey: ["is-admin", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId!)
+        .eq("role", "admin");
+      return (data ?? []).length > 0;
+    },
+  });
+
+  const tagsQ = useQuery({
+    enabled: !!userId,
+    queryKey: ["my-tags", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profile_tags")
+        .select("hidden, tag:tags(*)")
+        .eq("profile_id", userId!);
+      if (error) throw error;
+      return ((data ?? []) as { hidden: boolean; tag: Tag }[]).filter((r) => r.tag);
+    },
+  });
+
   if (!authReady || !userId || profileQ.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
