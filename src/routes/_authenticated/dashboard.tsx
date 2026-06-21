@@ -770,3 +770,63 @@ function LinksEditor({
     </div>
   );
 }
+function TagsToggle({
+  profileTags,
+  onChange,
+  userId,
+}: {
+  profileTags: { hidden: boolean; tag: Tag }[];
+  onChange: () => void;
+  userId: string;
+}) {
+  async function toggle(tagId: string, hidden: boolean) {
+    const { error } = await supabase
+      .from("profile_tags")
+      .update({ hidden })
+      .eq("profile_id", userId)
+      .eq("tag_id", tagId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    onChange();
+  }
+
+  if (profileTags.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-card p-8 text-center">
+        <p className="font-mono text-sm text-muted-foreground">
+          You don't have any tags yet. Tags are assigned by admins.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border border-border bg-card p-6">
+      <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Your tags</h3>
+      <p className="text-sm text-muted-foreground">
+        Choose which tags appear on your public profile. Hidden tags are still assigned, just not displayed.
+      </p>
+      <div className="space-y-2">
+        {profileTags.map(({ hidden, tag }) => (
+          <div key={tag.id} className="flex items-center justify-between rounded-md border border-border p-3">
+            <div className="flex items-center gap-2">
+              <span
+                className="rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+                style={{ color: tag.color, borderColor: tag.color + "55", backgroundColor: tag.color + "11" }}
+              >
+                {tag.name}
+              </span>
+              {tag.description && <span className="text-xs text-muted-foreground">{tag.description}</span>}
+            </div>
+            <label className="flex items-center gap-2 font-mono text-xs">
+              <Switch checked={!hidden} onCheckedChange={(v) => toggle(tag.id, !v)} />
+              {hidden ? "Hidden" : "Visible"}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
