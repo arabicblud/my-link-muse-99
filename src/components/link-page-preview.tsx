@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { FONT_OPTIONS } from "@/lib/link-page";
-import type { Profile, LinkRow } from "@/lib/link-page";
+import type { Profile, LinkRow, Tag } from "@/lib/link-page";
 import { Volume2, VolumeX } from "lucide-react";
 
 export function LinkPagePreview({
   profile,
   links,
+  tags = [],
   onLinkClick,
 }: {
   profile: Profile;
   links: LinkRow[];
+  tags?: Tag[];
   onLinkClick?: (id: string) => void;
 }) {
   const font = FONT_OPTIONS.find((f) => f.value === profile.font_family) ?? FONT_OPTIONS[0];
@@ -47,23 +49,41 @@ export function LinkPagePreview({
 
   const cursorStyle = profile.cursor_url ? { cursor: `url(${profile.cursor_url}), auto` } : {};
 
+  const isVideoBg = !!profile.background_image_url && /\.(mp4|webm|mov)(\?|$)/i.test(profile.background_image_url);
+
   return (
     <div
-      className="relative min-h-full w-full overflow-hidden"
+      className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
       style={{
         background: profile.background_color,
         color: profile.text_color,
         fontFamily: font.css,
-        backgroundImage: profile.background_image_url ? `url(${profile.background_image_url})` : undefined,
+        backgroundImage: profile.background_image_url && !isVideoBg ? `url(${profile.background_image_url})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
         ...cursorStyle,
       }}
     >
+      {isVideoBg && (
+        <video
+          src={profile.background_image_url!}
+          autoPlay muted loop playsInline
+          className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
+        />
+      )}
       <BackgroundEffect type={profile.background_effect} color={profile.accent_color} />
       {profile.audio_url && <AudioPlayer src={profile.audio_url} />}
 
-      <div className={`relative z-10 mx-auto flex max-w-md flex-col items-center px-6 py-16 ${animClass}`}>
+      <ProfileCard
+        enabled={profile.card_enabled}
+        tilt={profile.card_tilt && profile.is_premium}
+        accent={profile.accent_color}
+        textColor={profile.text_color}
+        cardOpacity={profile.card_opacity}
+        cardBlur={profile.card_blur}
+        bgColor={profile.background_color}
+        className={animClass}
+      >
         <div
           className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border"
           style={{
@@ -86,10 +106,29 @@ export function LinkPagePreview({
           {profile.display_name || profile.username}
         </h1>
         <p className="mt-1 text-sm opacity-60">@{profile.username}</p>
+
+        {tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+            {tags.map((t) => (
+              <span
+                key={t.id}
+                className="rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+                style={{ color: t.color, borderColor: t.color + "55", backgroundColor: t.color + "11" }}
+                title={t.description ?? undefined}
+              >
+                {t.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {profile.tagline && (
           <p className="mt-2 text-sm italic opacity-70">
             {profile.typewriter_enabled ? <Typewriter text={profile.tagline} /> : profile.tagline}
           </p>
+        )}
+        {profile.location && (
+          <p className="mt-1 font-mono text-xs opacity-60">📍 {profile.location}</p>
         )}
         {profile.bio && (
           <p className="mt-4 max-w-xs text-center text-sm opacity-80 whitespace-pre-line">
@@ -121,18 +160,73 @@ export function LinkPagePreview({
             {profile.view_count.toLocaleString()} views
           </p>
         )}
-        {profile.is_premium && (
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-widest opacity-50">
-            ★ premium
-          </p>
-        )}
-
-        <div className="mt-16 text-xs opacity-30">
-          <a href="/" className="hover:opacity-60">linq.site.je</a>
-        </div>
-      </div>
+      </ProfileCard>
     </div>
   );
+}
+
+function ProfileCard({
+  enabled,
+  tilt,
+  accent,
+  textColor,
+  cardOpacity,
+  cardBlur,
+  bgColor,
+  className,
+  children,
+}: {
+  enabled: boolean;
+  tilt: boolean;
+  accent: string;
+  textColor: string;
+  cardOpacity: number;
+  cardBlur: number;
+  bgColor: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [transform, setTransform] = useState("");
+
+  function onMove(e: React.MouseEvent) {
+    if (!tilt || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    setTransform(`perspective(900px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`);
+  }
+  function onLeave() {
+    if (tilt) setTransform("perspective(900px) rotateY(0) rotateX(0)");
+  }
+
+  const inner = (
+    <div
+      ref={ref}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      style={{
+        transform: tilt ? transform : undefined,
+        transition: tilt ? "transform .15s ease-out" : undefined,
+        transformStyle: "preserve-3d",
+        ...(enabled
+          ? {
+              backgroundColor: hexWithAlpha(bgColor, Math.min(0.85, cardOpacity / 100 + 0.3)),
+              backdropFilter: cardBlur > 0 ? `blur(${cardBlur}px)` : "blur(8px)",
+              border: `1px solid ${accent}33`,
+              boxShadow: `0 30px 80px -20px ${accent}22, 0 0 0 1px ${accent}15 inset`,
+              borderRadius: 16,
+              color: textColor,
+            }
+          : {}),
+      }}
+      className={`relative z-10 flex w-full max-w-md flex-col items-center px-6 py-12 ${className}`}
+    >
+      {children}
+    </div>
+  );
+
+  return inner;
 }
 
 function hexWithAlpha(hex: string, alpha: number) {
