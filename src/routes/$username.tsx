@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LinkPagePreview } from "@/components/link-page-preview";
-import type { Profile, LinkRow } from "@/lib/link-page";
+import type { Profile, LinkRow, Tag } from "@/lib/link-page";
 
 const profileQuery = (username: string) =>
   queryOptions({
@@ -21,7 +21,13 @@ const profileQuery = (username: string) =>
         .eq("profile_id", profile.id)
         .eq("is_visible", true)
         .order("position", { ascending: true });
-      return { profile: profile as Profile, links: (links ?? []) as LinkRow[] };
+      const { data: ptags } = await supabase
+        .from("profile_tags")
+        .select("hidden, tag:tags(*)")
+        .eq("profile_id", profile.id)
+        .eq("hidden", false);
+      const tags: Tag[] = ((ptags ?? []) as { tag: Tag }[]).map((r) => r.tag).filter(Boolean);
+      return { profile: profile as Profile, links: (links ?? []) as LinkRow[], tags };
     },
   });
 
@@ -63,8 +69,6 @@ function PublicProfile() {
   const { username } = Route.useParams();
   const { data } = useSuspenseQuery(profileQuery(username));
   return (
-    <div className="min-h-screen">
-      <LinkPagePreview profile={data.profile} links={data.links} />
-    </div>
+    <LinkPagePreview profile={data.profile} links={data.links} tags={data.tags} />
   );
 }

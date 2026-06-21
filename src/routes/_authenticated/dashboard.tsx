@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { LinkPagePreview } from "@/components/link-page-preview";
+import { AssetUpload } from "@/components/asset-upload";
 import {
   FONT_OPTIONS,
   BUTTON_STYLES,
@@ -17,9 +18,10 @@ import {
   ENTRANCE_ANIMATIONS,
   type Profile,
   type LinkRow,
+  type Tag,
 } from "@/lib/link-page";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock, Shield } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — linq" }] }),
@@ -69,6 +71,32 @@ function Dashboard() {
     },
   });
 
+  const adminQ = useQuery({
+    enabled: !!userId,
+    queryKey: ["is-admin", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId!)
+        .eq("role", "admin");
+      return (data ?? []).length > 0;
+    },
+  });
+
+  const tagsQ = useQuery({
+    enabled: !!userId,
+    queryKey: ["my-tags", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profile_tags")
+        .select("hidden, tag:tags(*)")
+        .eq("profile_id", userId!);
+      if (error) throw error;
+      return ((data ?? []) as { hidden: boolean; tag: Tag }[]).filter((r) => r.tag);
+    },
+  });
+
   if (!authReady || !userId || profileQ.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -84,6 +112,7 @@ function Dashboard() {
 
   const profile = profileQ.data;
   const links = linksQ.data ?? [];
+  const visibleTagsForPreview = (tagsQ.data ?? []).filter((r) => !r.hidden).map((r) => r.tag);
 
   async function signOut() {
     await qc.cancelQueries();
@@ -111,6 +140,13 @@ function Dashboard() {
             </a>
           </div>
           <div className="flex items-center gap-2">
+            {adminQ.data && (
+              <Link to="/admin">
+                <Button size="sm" variant="outline">
+                  <Shield className="h-3.5 w-3.5" /> Admin
+                </Button>
+              </Link>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -136,6 +172,7 @@ function Dashboard() {
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="theme">Theme</TabsTrigger>
               <TabsTrigger value="customize">Customize</TabsTrigger>
+              <TabsTrigger value="tags">Tags</TabsTrigger>
               <TabsTrigger value="premium">
                 <Sparkles className="mr-1 h-3 w-3" /> Premium
               </TabsTrigger>
@@ -145,13 +182,16 @@ function Dashboard() {
               <LinksEditor profileId={userId} links={links} onChange={() => linksQ.refetch()} />
             </TabsContent>
             <TabsContent value="profile" className="mt-4">
-              <ProfileEditor profile={profile} onSaved={() => profileQ.refetch()} />
+              <ProfileEditor profile={profile} onSaved={() => profileQ.refetch()} userId={userId} />
             </TabsContent>
             <TabsContent value="theme" className="mt-4">
               <ThemeEditor profile={profile} onSaved={() => profileQ.refetch()} />
             </TabsContent>
             <TabsContent value="customize" className="mt-4">
-              <CustomizeEditor profile={profile} onSaved={() => profileQ.refetch()} />
+              <CustomizeEditor profile={profile} onSaved={() => profileQ.refetch()} userId={userId} />
+            </TabsContent>
+            <TabsContent value="tags" className="mt-4">
+              <TagsToggle profileTags={tagsQ.data ?? []} onChange={() => tagsQ.refetch()} userId={userId} />
             </TabsContent>
             <TabsContent value="premium" className="mt-4">
               <PremiumPanel profile={profile} onChange={() => profileQ.refetch()} />
@@ -163,7 +203,7 @@ function Dashboard() {
           <div className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">Live preview</div>
           <div className="overflow-hidden rounded-md border border-border" style={{ aspectRatio: "9/16" }}>
             <div className="h-full overflow-auto">
-              <LinkPagePreview profile={profile} links={links.filter((l) => l.is_visible)} />
+              <LinkPagePreview profile={profile} links={links.filter((l) => l.is_visible)} tags={visibleTagsForPreview} />
             </div>
           </div>
         </aside>
@@ -226,16 +266,17 @@ function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void 
   );
 }
 
-function ProfileEditor({ profile, onSaved }: { profile: Profile; onSaved: () => void }) {
+function ProfileEditor({ profile, onSaved, userId }: { profile: Profile; onSaved: () => void; userId: string }) {
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatar, setAvatar] = useState(profile.avatar_url ?? "");
+  const [location, setLocation] = useState(profile.location ?? "");
 
   const m = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName, bio, avatar_url: avatar || null })
+        .update({ display_name: displayName, bio, avatar_url: avatar || null, location: location || null })
         .eq("id", profile.id);
       if (error) throw error;
     },
@@ -254,8 +295,18 @@ function ProfileEditor({ profile, onSaved }: { profile: Profile; onSaved: () => 
           <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="mt-1" />
         </div>
         <div>
-          <Label className="font-mono text-xs">Avatar URL</Label>
-          <Input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="https://..." className="mt-1" />
+          <Label className="font-mono text-xs">Avatar</Label>
+          <div className="mt-1">
+            <AssetUpload
+              userId={userId} kind="avatar" value={avatar || null}
+              onChange={(u) => setAvatar(u ?? "")}
+              accept="image/*,.gif" label="Profile picture (image / gif)"
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="font-mono text-xs">Location (optional)</Label>
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Paris, FR" className="mt-1" />
         </div>
         <div>
           <Label className="font-mono text-xs">Bio</Label>
@@ -383,7 +434,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
   );
 }
 
-function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () => void }) {
+function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSaved: () => void; userId: string }) {
   const [tagline, setTagline] = useState(profile.tagline ?? "");
   const [typewriter, setTypewriter] = useState(profile.typewriter_enabled);
   const [pageTitle, setPageTitle] = useState(profile.page_title ?? "");
@@ -397,6 +448,8 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
   const [blur, setBlur] = useState(profile.card_blur);
   const [glow, setGlow] = useState(profile.icon_glow_color ?? "");
   const [showViews, setShowViews] = useState(profile.show_views);
+  const [cardEnabled, setCardEnabled] = useState(profile.card_enabled);
+  const [cardTilt, setCardTilt] = useState(profile.card_tilt);
 
   const premium = profile.is_premium;
 
@@ -418,6 +471,8 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
           card_blur: premium ? blur : 0,
           icon_glow_color: premium ? glow || null : null,
           show_views: showViews,
+          card_enabled: cardEnabled,
+          card_tilt: premium ? cardTilt : false,
         })
         .eq("id", profile.id);
       if (error) throw error;
@@ -468,6 +523,9 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
         <label className="flex items-center gap-2 font-mono text-xs">
           <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
         </label>
+        <label className="flex items-center gap-2 font-mono text-xs">
+          <Switch checked={cardEnabled} onCheckedChange={setCardEnabled} /> Show profile card frame (guns.lol style)
+        </label>
       </Section>
 
       <Section title={<span className="flex items-center gap-2">Premium customization {!premium && <Lock className="h-3 w-3" />}</span>}>
@@ -476,21 +534,37 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
             Unlock with a premium code in the Premium tab.
           </p>
         )}
-        <Field label="Background image URL">
-          <Input disabled={!premium} value={bgImage} onChange={(e) => setBgImage(e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="Profile audio URL (mp3)">
-          <Input disabled={!premium} value={audio} onChange={(e) => setAudio(e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="Custom cursor URL (png 32×32)">
-          <Input disabled={!premium} value={cursor} onChange={(e) => setCursor(e.target.value)} placeholder="https://..." />
-        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AssetUpload
+            userId={userId} kind="bg" value={bgImage || null}
+            onChange={(u) => setBgImage(u ?? "")}
+            accept="image/*,video/*,.gif" label="Background (image / gif / video)"
+            preview={bgImage && /\.(mp4|webm|mov)(\?|$)/i.test(bgImage) ? "video" : "image"}
+            disabled={!premium}
+          />
+          <AssetUpload
+            userId={userId} kind="audio" value={audio || null}
+            onChange={(u) => setAudio(u ?? "")}
+            accept="audio/*" label="Profile audio (mp3 / ogg)"
+            preview="audio" disabled={!premium}
+          />
+          <AssetUpload
+            userId={userId} kind="cursor" value={cursor || null}
+            onChange={(u) => setCursor(u ?? "")}
+            accept="image/png,image/x-icon" label="Custom cursor (PNG)"
+            preview="cursor" disabled={!premium}
+          />
+        </div>
         <Field label={`Card blur — ${blur}px`}>
           <input disabled={!premium} type="range" min={0} max={20} value={blur} onChange={(e) => setBlur(+e.target.value)} className="w-full" />
         </Field>
         <Field label="Avatar glow color">
           <Input disabled={!premium} value={glow} onChange={(e) => setGlow(e.target.value)} placeholder="#ff00aa" />
         </Field>
+        <label className="flex items-center gap-2 font-mono text-xs">
+          <Switch disabled={!premium} checked={cardTilt} onCheckedChange={setCardTilt} />
+          3D tilt card on mouse hover
+        </label>
       </Section>
 
       <Button onClick={() => m.mutate()} disabled={m.isPending}>
@@ -690,6 +764,66 @@ function LinksEditor({
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function TagsToggle({
+  profileTags,
+  onChange,
+  userId,
+}: {
+  profileTags: { hidden: boolean; tag: Tag }[];
+  onChange: () => void;
+  userId: string;
+}) {
+  async function toggle(tagId: string, hidden: boolean) {
+    const { error } = await supabase
+      .from("profile_tags")
+      .update({ hidden })
+      .eq("profile_id", userId)
+      .eq("tag_id", tagId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    onChange();
+  }
+
+  if (profileTags.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-card p-8 text-center">
+        <p className="font-mono text-sm text-muted-foreground">
+          You don't have any tags yet. Tags are assigned by admins.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border border-border bg-card p-6">
+      <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Your tags</h3>
+      <p className="text-sm text-muted-foreground">
+        Choose which tags appear on your public profile. Hidden tags are still assigned, just not displayed.
+      </p>
+      <div className="space-y-2">
+        {profileTags.map(({ hidden, tag }) => (
+          <div key={tag.id} className="flex items-center justify-between rounded-md border border-border p-3">
+            <div className="flex items-center gap-2">
+              <span
+                className="rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+                style={{ color: tag.color, borderColor: tag.color + "55", backgroundColor: tag.color + "11" }}
+              >
+                {tag.name}
+              </span>
+              {tag.description && <span className="text-xs text-muted-foreground">{tag.description}</span>}
+            </div>
+            <label className="flex items-center gap-2 font-mono text-xs">
+              <Switch checked={!hidden} onCheckedChange={(v) => toggle(tag.id, !v)} />
+              {hidden ? "Hidden" : "Visible"}
+            </label>
           </div>
         ))}
       </div>

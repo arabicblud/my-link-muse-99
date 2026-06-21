@@ -25,6 +25,10 @@ export type Profile = {
   card_blur: number;
   icon_glow_color: string | null;
   entrance_animation: string;
+  card_enabled: boolean;
+  card_tilt: boolean;
+  location: string | null;
+  premium_expires_at: string | null;
 };
 
 export type LinkRow = {
@@ -35,6 +39,22 @@ export type LinkRow = {
   icon: string | null;
   position: number;
   is_visible: boolean;
+};
+
+export type Tag = {
+  id: string;
+  slug: string;
+  name: string;
+  color: string;
+  icon: string | null;
+  description: string | null;
+};
+
+export type ProfileTag = {
+  profile_id: string;
+  tag_id: string;
+  hidden: boolean;
+  tag?: Tag;
 };
 
 export const FONT_OPTIONS = [
