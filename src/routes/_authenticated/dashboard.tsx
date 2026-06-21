@@ -434,7 +434,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
   );
 }
 
-function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () => void }) {
+function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSaved: () => void; userId: string }) {
   const [tagline, setTagline] = useState(profile.tagline ?? "");
   const [typewriter, setTypewriter] = useState(profile.typewriter_enabled);
   const [pageTitle, setPageTitle] = useState(profile.page_title ?? "");
@@ -448,6 +448,8 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
   const [blur, setBlur] = useState(profile.card_blur);
   const [glow, setGlow] = useState(profile.icon_glow_color ?? "");
   const [showViews, setShowViews] = useState(profile.show_views);
+  const [cardEnabled, setCardEnabled] = useState(profile.card_enabled);
+  const [cardTilt, setCardTilt] = useState(profile.card_tilt);
 
   const premium = profile.is_premium;
 
@@ -469,6 +471,8 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
           card_blur: premium ? blur : 0,
           icon_glow_color: premium ? glow || null : null,
           show_views: showViews,
+          card_enabled: cardEnabled,
+          card_tilt: premium ? cardTilt : false,
         })
         .eq("id", profile.id);
       if (error) throw error;
@@ -519,6 +523,9 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
         <label className="flex items-center gap-2 font-mono text-xs">
           <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
         </label>
+        <label className="flex items-center gap-2 font-mono text-xs">
+          <Switch checked={cardEnabled} onCheckedChange={setCardEnabled} /> Show profile card frame (guns.lol style)
+        </label>
       </Section>
 
       <Section title={<span className="flex items-center gap-2">Premium customization {!premium && <Lock className="h-3 w-3" />}</span>}>
@@ -527,21 +534,37 @@ function CustomizeEditor({ profile, onSaved }: { profile: Profile; onSaved: () =
             Unlock with a premium code in the Premium tab.
           </p>
         )}
-        <Field label="Background image URL">
-          <Input disabled={!premium} value={bgImage} onChange={(e) => setBgImage(e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="Profile audio URL (mp3)">
-          <Input disabled={!premium} value={audio} onChange={(e) => setAudio(e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="Custom cursor URL (png 32×32)">
-          <Input disabled={!premium} value={cursor} onChange={(e) => setCursor(e.target.value)} placeholder="https://..." />
-        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AssetUpload
+            userId={userId} kind="bg" value={bgImage || null}
+            onChange={(u) => setBgImage(u ?? "")}
+            accept="image/*,video/*,.gif" label="Background (image / gif / video)"
+            preview={bgImage && /\.(mp4|webm|mov)(\?|$)/i.test(bgImage) ? "video" : "image"}
+            disabled={!premium}
+          />
+          <AssetUpload
+            userId={userId} kind="audio" value={audio || null}
+            onChange={(u) => setAudio(u ?? "")}
+            accept="audio/*" label="Profile audio (mp3 / ogg)"
+            preview="audio" disabled={!premium}
+          />
+          <AssetUpload
+            userId={userId} kind="cursor" value={cursor || null}
+            onChange={(u) => setCursor(u ?? "")}
+            accept="image/png,image/x-icon" label="Custom cursor (PNG)"
+            preview="cursor" disabled={!premium}
+          />
+        </div>
         <Field label={`Card blur — ${blur}px`}>
           <input disabled={!premium} type="range" min={0} max={20} value={blur} onChange={(e) => setBlur(+e.target.value)} className="w-full" />
         </Field>
         <Field label="Avatar glow color">
           <Input disabled={!premium} value={glow} onChange={(e) => setGlow(e.target.value)} placeholder="#ff00aa" />
         </Field>
+        <label className="flex items-center gap-2 font-mono text-xs">
+          <Switch disabled={!premium} checked={cardTilt} onCheckedChange={setCardTilt} />
+          3D tilt card on mouse hover
+        </label>
       </Section>
 
       <Button onClick={() => m.mutate()} disabled={m.isPending}>
