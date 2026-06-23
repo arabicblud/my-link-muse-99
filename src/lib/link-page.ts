@@ -72,6 +72,7 @@ export type Tag = {
   color: string;
   icon: string | null;
   description: string | null;
+  icon_url?: string | null;
 };
 
 export type ProfileTag = {
