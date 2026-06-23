@@ -15,17 +15,18 @@ const profileQuery = (username: string) =>
         .eq("username", username)
         .maybeSingle();
       if (error) throw error;
-      if (!profile) throw notFound();
+      if (!profile || !profile.id) throw notFound();
+      const profileId = profile.id as string;
       const { data: links } = await supabase
         .from("links")
         .select("*")
-        .eq("profile_id", profile.id)
+        .eq("profile_id", profileId)
         .eq("is_visible", true)
         .order("position", { ascending: true });
       const { data: ptags } = await supabase
         .from("profile_tags")
         .select("hidden, tag:tags(*)")
-        .eq("profile_id", profile.id)
+        .eq("profile_id", profileId)
         .eq("hidden", false);
       const tags: Tag[] = ((ptags ?? []) as { tag: Tag }[]).map((r) => r.tag).filter(Boolean);
       return { profile: profile as unknown as Profile, links: (links ?? []) as LinkRow[], tags };
