@@ -21,10 +21,10 @@ import {
   type Tag,
 } from "@/lib/link-page";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock, Shield } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock, Shield, Eye, MousePointer2, IdCard, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — linq" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Linqed" }] }),
   component: Dashboard,
 });
 
@@ -127,7 +127,7 @@ function Dashboard() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="font-mono text-base font-semibold">
-              linq<span className="text-muted-foreground">/</span>
+              linqed<span className="text-muted-foreground">/</span>
             </Link>
             <a
               href={`/${profile.username}`}
@@ -135,7 +135,7 @@ function Dashboard() {
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground"
             >
-              linq.site.je/{profile.username}
+              linqed/{profile.username}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -168,6 +168,7 @@ function Dashboard() {
         <div>
           <Tabs defaultValue="links">
             <TabsList className="font-mono">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="links">Links</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="theme">Theme</TabsTrigger>
@@ -178,6 +179,9 @@ function Dashboard() {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="overview" className="mt-4">
+              <OverviewPanel profile={profile} />
+            </TabsContent>
             <TabsContent value="links" className="mt-4">
               <LinksEditor profileId={userId} links={links} onChange={() => linksQ.refetch()} />
             </TabsContent>
@@ -249,7 +253,7 @@ function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void 
         <h1 className="text-xl font-semibold">Pick a username</h1>
         <p className="mt-1 text-sm text-muted-foreground">This will be your public URL.</p>
         <div className="mt-5 flex items-center rounded-sm border border-input bg-background">
-          <span className="pl-3 font-mono text-sm text-muted-foreground">linq.site.je/</span>
+          <span className="pl-3 font-mono text-sm text-muted-foreground">linqed/</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
