@@ -526,3 +526,88 @@ function TagsPanel() {
     </div>
   );
 }
+function AnalyticsPanel() {
+  const q = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_stats");
+      if (error) throw error;
+      return data as { ok: boolean; users: number; banned: number; premium: number; views: number; clicks: number; codes_used: number; codes_available: number; signups_30d: { day: string; n: number }[] | null };
+    },
+  });
+  if (q.isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
+  const s = q.data;
+  if (!s?.ok) return <p className="text-sm text-muted-foreground">Could not load stats.</p>;
+  const max = Math.max(1, ...(s.signups_30d ?? []).map((d) => d.n));
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Stat label="Users" value={s.users} accent="text-blue-400" />
+        <Stat label="Premium" value={s.premium} accent="text-yellow-400" />
+        <Stat label="Banned" value={s.banned} accent="text-red-400" />
+        <Stat label="Total views" value={s.views.toLocaleString()} accent="text-green-400" />
+        <Stat label="Link clicks" value={s.clicks.toLocaleString()} accent="text-purple-400" />
+        <Stat label="Codes used" value={s.codes_used} accent="text-orange-400" />
+        <Stat label="Codes available" value={s.codes_available} accent="text-emerald-400" />
+      </div>
+      <div className="rounded-md border border-border bg-card p-4">
+        <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+          <BarChart3 className="h-3.5 w-3.5" /> Signups — last 30 days
+        </div>
+        <div className="mt-3 flex h-32 items-end gap-1">
+          {(s.signups_30d ?? []).map((d) => (
+            <div key={d.day} className="flex-1" title={`${d.day}: ${d.n}`}>
+              <div className="w-full rounded-sm bg-foreground/70" style={{ height: `${(d.n / max) * 100}%` }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReservedPanel() {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const q = useQuery({
+    queryKey: ["reserved-usernames"],
+    queryFn: async () => {
+      const { data } = await supabase.from("reserved_usernames").select("name").order("name");
+      return (data ?? []) as { name: string }[];
+    },
+  });
+  async function add() {
+    const n = name.trim().toLowerCase();
+    if (!n) return;
+    const { error } = await supabase.from("reserved_usernames").insert({ name: n });
+    if (error) return toast.error(error.message);
+    setName("");
+    qc.invalidateQueries({ queryKey: ["reserved-usernames"] });
+  }
+  async function del(n: string) {
+    const { error } = await supabase.from("reserved_usernames").delete().eq("name", n);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["reserved-usernames"] });
+  }
+  return (
+    <div className="space-y-3">
+      <div className="rounded-md border border-border bg-card p-4">
+        <Label className="font-mono text-xs">Add reserved username</Label>
+        <div className="mt-2 flex gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="settings" />
+          <Button onClick={add}><Plus className="h-4 w-4" /> Add</Button>
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {(q.data ?? []).map((r) => (
+          <div key={r.name} className="flex items-center justify-between rounded-md border border-border bg-card p-3">
+            <span className="font-mono text-sm">{r.name}</span>
+            <button onClick={() => del(r.name)} className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
