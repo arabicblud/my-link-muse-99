@@ -16,6 +16,10 @@ import {
   THEME_PRESETS,
   BACKGROUND_EFFECTS,
   ENTRANCE_ANIMATIONS,
+  USERNAME_EFFECTS,
+  CURSOR_EFFECTS,
+  BUTTON_THEMES,
+  BUTTON_LAYOUTS,
   type Profile,
   type LinkRow,
   type Tag,
@@ -275,12 +279,21 @@ function ProfileEditor({ profile, onSaved, userId }: { profile: Profile; onSaved
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatar, setAvatar] = useState(profile.avatar_url ?? "");
   const [location, setLocation] = useState(profile.location ?? "");
+  const [aliases, setAliases] = useState(profile.aliases ?? "");
+  const [discord, setDiscord] = useState(profile.discord_id ?? "");
 
   const m = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName, bio, avatar_url: avatar || null, location: location || null })
+        .update({
+          display_name: displayName,
+          bio,
+          avatar_url: avatar || null,
+          location: location || null,
+          aliases: aliases || null,
+          discord_id: discord || null,
+        })
         .eq("id", profile.id);
       if (error) throw error;
     },
@@ -311,6 +324,15 @@ function ProfileEditor({ profile, onSaved, userId }: { profile: Profile; onSaved
         <div>
           <Label className="font-mono text-xs">Location (optional)</Label>
           <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Paris, FR" className="mt-1" />
+        </div>
+        <div>
+          <Label className="font-mono text-xs">Aliases (small text under your description)</Label>
+          <Input value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="Founder of Linqed" className="mt-1" />
+        </div>
+        <div>
+          <Label className="font-mono text-xs">Discord server invite (optional)</Label>
+          <Input value={discord} onChange={(e) => setDiscord(e.target.value)} placeholder="https://discord.gg/..." className="mt-1" />
+          <p className="mt-1 font-mono text-[10px] text-muted-foreground">Live presence requires a bot token — coming soon. For now we link the invite.</p>
         </div>
         <div>
           <Label className="font-mono text-xs">Bio</Label>
