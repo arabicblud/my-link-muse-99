@@ -29,9 +29,7 @@ export type Profile = {
   card_tilt: boolean;
   location: string | null;
   premium_expires_at: string | null;
-};
-
-export type ProfileExtras = {
+  // extras (all rows have these after the migration; nullable defaults handled DB-side)
   aliases: string | null;
   banner_url: string | null;
   discord_id: string | null;
@@ -53,7 +51,7 @@ export type ProfileExtras = {
   banned_at: string | null;
 };
 
-export type FullProfile = Profile & ProfileExtras;
+export type FullProfile = Profile;
 
 export type LinkRow = {
   id: string;
