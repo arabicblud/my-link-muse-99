@@ -646,7 +646,7 @@ function PremiumPanel({ profile, onChange }: { profile: Profile; onChange: () =>
           <h2 className="text-lg font-semibold">Unlock Premium</h2>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Background images, profile audio, custom cursors, card blur, avatar glow.
+          Unlock every visual flourish on Linqed.
         </p>
       </div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -663,6 +663,98 @@ function PremiumPanel({ profile, onChange }: { profile: Profile; onChange: () =>
       <p className="font-mono text-xs text-muted-foreground">
         Codes are single-use. Once redeemed they can't be used again.
       </p>
+      <PremiumPerks />
+    </div>
+  );
+}
+
+function PremiumPerks() {
+  const perks = [
+    "Custom SEO title & description",
+    "Custom browser tab icon (favicon)",
+    "Username effects (glow, rainbow, glitch)",
+    "Gradient display name",
+    "Profile card frame + banner image",
+    "3D tilt card on mouse hover",
+    "Custom card frame (opacity, blur, glow)",
+    "Cursor effects (trail, sparkle)",
+    "Hide views counter",
+    "Force a single colour on all your tags",
+    "Freeze video backgrounds on the last frame",
+    "Extra button themes & layouts",
+    "Entrance animations",
+    "Typewriter tagline effect",
+    "Resizable card width",
+  ];
+  return (
+    <div className="rounded-md border border-dashed border-border p-4">
+      <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Everything Premium gives you</h3>
+      <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+        {perks.map((p) => (
+          <li key={p} className="flex items-start gap-2 text-sm">
+            <Check className="mt-0.5 h-3.5 w-3.5 text-yellow-400" />
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function OverviewPanel({ profile }: { profile: Profile }) {
+  const clicksQ = useQuery({
+    queryKey: ["my-clicks", profile.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("link_clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("profile_id", profile.id);
+      return count ?? 0;
+    },
+  });
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Stat icon={<IdCard className="h-4 w-4" />} label="UID" value={profile.uid ?? "—"} />
+        <Stat icon={<Eye className="h-4 w-4" />} label="Views" value={profile.view_count.toLocaleString()} />
+        <Stat icon={<MousePointer2 className="h-4 w-4" />} label="Link clicks" value={(clicksQ.data ?? 0).toLocaleString()} />
+        <Stat icon={<Sparkles className="h-4 w-4" />} label="Plan" value={profile.is_premium ? "Premium ★" : "Free"} />
+      </div>
+      <div className="rounded-md border border-border bg-card p-6">
+        <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Public profile</h3>
+        <div className="mt-3 flex items-center justify-between">
+          <a
+            href={`/${profile.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-sm hover:underline"
+          >
+            linqed/{profile.username}
+          </a>
+          <span className="font-mono text-xs text-muted-foreground">
+            joined {profile.premium_expires_at ? new Date(profile.premium_expires_at).toLocaleDateString() : ""}
+          </span>
+        </div>
+        {profile.is_premium && profile.premium_expires_at && (
+          <p className="mt-2 font-mono text-xs text-yellow-400">
+            Premium until {new Date(profile.premium_expires_at).toLocaleDateString()}
+          </p>
+        )}
+        {profile.is_premium && !profile.premium_expires_at && (
+          <p className="mt-2 font-mono text-xs text-yellow-400">Premium — lifetime</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4">
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        {icon} {label}
+      </div>
+      <div className="mt-2 font-mono text-lg font-semibold">{value}</div>
     </div>
   );
 }
