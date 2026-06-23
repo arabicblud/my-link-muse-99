@@ -16,7 +16,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
-  head: () => ({ meta: [{ title: "Sign in — linq" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Linqed" }] }),
   component: AuthPage,
 });
 
@@ -44,6 +44,16 @@ function AuthPage() {
       if (mode === "signup") {
         if (!/^[a-z0-9_-]{2,32}$/.test(username)) {
           toast.error("Username must be 2–32 chars, lowercase letters, numbers, _ or -");
+          setLoading(false);
+          return;
+        }
+        const { data: reserved } = await supabase
+          .from("reserved_usernames")
+          .select("name")
+          .eq("name", username)
+          .maybeSingle();
+        if (reserved) {
+          toast.error("That username is reserved.");
           setLoading(false);
           return;
         }
@@ -114,7 +124,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 noise">
       <div className="w-full max-w-sm">
         <Link to="/" className="mb-10 block text-center font-mono text-lg font-semibold">
-          linq<span className="text-muted-foreground">/</span>
+          linqed<span className="text-muted-foreground">/</span>
         </Link>
 
         <div className="rounded-md border border-border bg-card p-6">
@@ -146,7 +156,7 @@ function AuthPage() {
               <div>
                 <Label htmlFor="username" className="font-mono text-xs">username</Label>
                 <div className="mt-1 flex items-center rounded-sm border border-input bg-background">
-                  <span className="pl-3 font-mono text-sm text-muted-foreground">linq.site.je/</span>
+                  <span className="pl-3 font-mono text-sm text-muted-foreground">linqed/</span>
                   <input
                     id="username"
                     value={username}

@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Link2, Palette, Zap, Lock } from "lucide-react";
+import { ArrowRight, Link2, Palette, Zap, Lock, LayoutDashboard } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "linq — one link for everything you are" },
+      { title: "Linqed — one link for everything you are" },
       { name: "description", content: "Minimal, fast link-in-bio. Claim your username and share one URL." },
-      { property: "og:title", content: "linq — one link for everything you are" },
+      { property: "og:title", content: "Linqed — one link for everything you are" },
       { property: "og:description", content: "Minimal, fast link-in-bio. Claim your username and share one URL." },
     ],
   }),
@@ -15,23 +17,38 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
+  }, []);
   return (
     <div className="min-h-screen bg-background text-foreground noise">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Link to="/" className="font-mono text-lg font-semibold tracking-tight">
-          linq<span className="text-muted-foreground">/</span>
+          linqed<span className="text-muted-foreground">/</span>
         </Link>
         <nav className="flex items-center gap-2 font-mono text-sm">
-          <Link to="/auth" className="rounded-sm px-3 py-1.5 text-muted-foreground hover:text-foreground">
-            sign in
-          </Link>
-          <Link
-            to="/auth"
-            search={{ mode: "signup" }}
-            className="rounded-sm border border-border bg-foreground px-3 py-1.5 text-background hover:opacity-90"
-          >
-            claim yours →
-          </Link>
+          {authed ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-foreground px-3 py-1.5 text-background hover:opacity-90"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth" className="rounded-sm px-3 py-1.5 text-muted-foreground hover:text-foreground">
+                sign in
+              </Link>
+              <Link
+                to="/auth"
+                search={{ mode: "signup" }}
+                className="rounded-sm border border-border bg-foreground px-3 py-1.5 text-background hover:opacity-90"
+              >
+                claim yours →
+              </Link>
+            </>
+          )}
         </nav>
       </header>
 
@@ -45,14 +62,24 @@ function Index() {
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              to="/auth"
-              search={{ mode: "signup" }}
-              className="group inline-flex items-center justify-center gap-2 rounded-sm bg-foreground px-5 py-3 font-mono text-sm font-medium text-background transition hover:opacity-90"
-            >
-              Create your page
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-            </Link>
+            {authed ? (
+              <Link
+                to="/dashboard"
+                className="group inline-flex items-center justify-center gap-2 rounded-sm bg-foreground px-5 py-3 font-mono text-sm font-medium text-background transition hover:opacity-90"
+              >
+                Go to dashboard
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                search={{ mode: "signup" }}
+                className="group inline-flex items-center justify-center gap-2 rounded-sm bg-foreground px-5 py-3 font-mono text-sm font-medium text-background transition hover:opacity-90"
+              >
+                Create your page
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Link>
+            )}
             <Link
               to="/$username"
               params={{ username: "demo" }}
@@ -85,11 +112,11 @@ function Index() {
             </h2>
             <p className="mt-3 text-muted-foreground">No tutorials. No upsells. Just a page.</p>
             <Link
-              to="/auth"
-              search={{ mode: "signup" }}
+              to={authed ? "/dashboard" : "/auth"}
+              search={authed ? undefined : { mode: "signup" }}
               className="mt-6 inline-flex items-center gap-2 rounded-sm bg-foreground px-5 py-3 font-mono text-sm text-background hover:opacity-90"
             >
-              Claim your username <ArrowRight className="h-4 w-4" />
+              {authed ? "Open your dashboard" : "Claim your username"} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>
@@ -97,8 +124,8 @@ function Index() {
 
       <footer className="mx-auto max-w-6xl border-t border-border px-6 py-8 font-mono text-xs text-muted-foreground">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span>© {new Date().getFullYear()} linq</span>
-          <span>Built with care.</span>
+          <span>© {new Date().getFullYear()} Linqed</span>
+          <span>Fully Vibe-Coded ⚡</span>
         </div>
       </footer>
     </div>

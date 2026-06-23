@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Shield, Copy, Trash2, Plus } from "lucide-react";
+import { Loader2, Shield, Copy, Trash2, Plus, Ban, Eye, BarChart3 } from "lucide-react";
 import type { Tag } from "@/lib/link-page";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin — linq" }] }),
+  head: () => ({ meta: [{ title: "Admin — Linqed" }] }),
   component: AdminPage,
 });
 
@@ -52,7 +52,7 @@ function AdminPage() {
     );
   }
 
-  if (!isAdmin) return <UnlockGate onUnlocked={() => setIsAdmin(true)} />;
+  if (!isAdmin) return <HardLock onUnlocked={() => setIsAdmin(true)} />;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -70,22 +70,27 @@ function AdminPage() {
       <main className="mx-auto max-w-7xl px-6 py-8">
         <Tabs defaultValue="users">
           <TabsList className="font-mono">
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="codes">Premium codes</TabsTrigger>
             <TabsTrigger value="tags">Tags</TabsTrigger>
+            <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
+          <TabsContent value="analytics" className="mt-4"><AnalyticsPanel /></TabsContent>
           <TabsContent value="users" className="mt-4"><UsersTable userId={userId!} /></TabsContent>
           <TabsContent value="codes" className="mt-4"><CodesPanel /></TabsContent>
           <TabsContent value="tags" className="mt-4"><TagsPanel /></TabsContent>
+          <TabsContent value="reserved" className="mt-4"><ReservedPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
   );
 }
 
-function UnlockGate({ onUnlocked }: { onUnlocked: () => void }) {
+function HardLock({ onUnlocked }: { onUnlocked: () => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showCodeBox, setShowCodeBox] = useState(false);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -96,6 +101,25 @@ function UnlockGate({ onUnlocked }: { onUnlocked: () => void }) {
     if (!res?.ok) return toast.error(res?.error ?? "Invalid code");
     toast.success("Admin unlocked");
     onUnlocked();
+  }
+  if (!showCodeBox) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="text-center">
+          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">404</p>
+          <h1 className="mt-2 text-2xl font-semibold">Page not found</h1>
+          <a href="/" className="mt-4 inline-block font-mono text-sm text-muted-foreground hover:text-foreground">← home</a>
+          {/* hidden master-code escape hatch */}
+          <button
+            onClick={() => setShowCodeBox(true)}
+            className="ml-4 mt-4 inline-block font-mono text-[10px] text-muted-foreground/30 hover:text-muted-foreground"
+            aria-label="master code"
+          >
+            ·
+          </button>
+        </div>
+      </div>
+    );
   }
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -127,7 +151,7 @@ function UsersTable({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, display_name, view_count, is_premium, premium_expires_at, created_at")
+        .select("id, username, display_name, view_count, is_premium, premium_expires_at, created_at, banned_at, uid")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -162,21 +186,42 @@ function UsersTable({ userId }: { userId: string }) {
   }
 
   async function grantLifetime(uid: string) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_premium: true, premium_expires_at: null })
-      .eq("id", uid);
+    const { data, error } = await supabase.rpc("admin_grant_premium", { _user_id: uid, _duration_days: null as unknown as number });
     if (error) return toast.error(error.message);
-    toast.success("Granted");
+    const r = data as { ok: boolean; error?: string };
+    if (!r?.ok) return toast.error(r?.error ?? "Could not grant");
+    toast.success("Granted lifetime ★");
     qc.invalidateQueries({ queryKey: ["admin-users"] });
   }
   async function revoke(uid: string) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_premium: false, premium_expires_at: null })
-      .eq("id", uid);
+    const { data, error } = await supabase.rpc("admin_revoke_premium", { _user_id: uid });
     if (error) return toast.error(error.message);
+    const r = data as { ok: boolean; error?: string };
+    if (!r?.ok) return toast.error(r?.error ?? "Could not revoke");
     toast.success("Revoked");
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+  async function banToggle(uid: string, ban: boolean) {
+    const { data, error } = await supabase.rpc("admin_ban_user", { _user_id: uid, _ban: ban });
+    if (error) return toast.error(error.message);
+    const r = data as { ok: boolean; error?: string };
+    if (!r?.ok) return toast.error(r?.error ?? "Could not ban");
+    toast.success(ban ? "Banned" : "Unbanned");
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+  async function addViews(uid: string) {
+    const n = parseInt(prompt("Add how many views? (use negative to subtract)", "100") ?? "0", 10);
+    if (!n) return;
+    const { error } = await supabase.rpc("admin_add_views", { _user_id: uid, _count: n });
+    if (error) return toast.error(error.message);
+    toast.success(`${n > 0 ? "+" : ""}${n} views`);
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+  async function deleteUser(uid: string, username: string) {
+    if (!confirm(`Delete @${username}? Their profile, links, tags and clicks will be removed.`)) return;
+    const { error } = await supabase.from("profiles").delete().eq("id", uid);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted");
     qc.invalidateQueries({ queryKey: ["admin-users"] });
   }
 
@@ -211,7 +256,11 @@ function UsersTable({ userId }: { userId: string }) {
               const userTags = pt.filter((r) => r.profile_id === u.id).map((r) => r.tag_id);
               return (
                 <tr key={u.id} className="border-b border-border/60 last:border-0">
-                  <td className="px-4 py-3 font-mono">@{u.username}</td>
+                  <td className="px-4 py-3 font-mono">
+                    @{u.username}
+                    {u.banned_at && <span className="ml-2 rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] text-red-400">banned</span>}
+                    {u.uid && <div className="font-mono text-[10px] text-muted-foreground">uid {u.uid}</div>}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{u.view_count}</td>
                   <td className="px-4 py-3">
                     {u.is_premium ? (
@@ -253,6 +302,15 @@ function UsersTable({ userId }: { userId: string }) {
                       ) : (
                         <Button size="sm" variant="outline" onClick={() => grantLifetime(u.id)}>Grant ∞</Button>
                       )}
+                      <Button size="sm" variant="outline" onClick={() => addViews(u.id)} title="Add views">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => banToggle(u.id, !u.banned_at)} title={u.banned_at ? "Unban" : "Ban"}>
+                        <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => deleteUser(u.id, u.username)} title="Delete">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                       <a href={`/${u.username}`} target="_blank" rel="noreferrer">
                         <Button size="sm" variant="ghost">View</Button>
                       </a>
@@ -280,6 +338,7 @@ function Stat({ label, value, accent }: { label: string; value: string | number;
 function CodesPanel() {
   const qc = useQueryClient();
   const [duration, setDuration] = useState<string>("30");
+  const [quantity, setQuantity] = useState<number>(1);
   const codesQ = useQuery({
     queryKey: ["admin-codes"],
     queryFn: async () => {
@@ -296,13 +355,18 @@ function CodesPanel() {
   const gen = useMutation({
     mutationFn: async () => {
       const dur = duration === "lifetime" ? null : parseInt(duration, 10);
-      const { data, error } = await supabase.rpc("generate_premium_code", { _duration_days: dur as number });
+      const { data, error } = await supabase.rpc("generate_premium_code", {
+        _duration_days: dur as number,
+        _quantity: quantity,
+      });
       if (error) throw error;
-      return data as { ok: boolean; code?: string };
+      return data as { ok: boolean; codes?: string[]; error?: string };
     },
     onSuccess: (d) => {
-      if (!d?.ok) return toast.error("Could not generate");
-      toast.success(`Generated ${d.code}`);
+      if (!d?.ok) return toast.error(d?.error ?? "Could not generate");
+      const codes = d.codes ?? [];
+      toast.success(`Generated ${codes.length} code${codes.length === 1 ? "" : "s"}`);
+      if (codes.length > 0) navigator.clipboard.writeText(codes.join("\n")).catch(() => {});
       qc.invalidateQueries({ queryKey: ["admin-codes"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -333,9 +397,18 @@ function CodesPanel() {
             </button>
           ))}
         </div>
-        <Button onClick={() => gen.mutate()} disabled={gen.isPending} className="mt-3">
-          {gen.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Generate
-        </Button>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Label className="font-mono text-xs">Quantity</Label>
+          <Input
+            type="number" min={1} max={100} value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, Math.min(100, parseInt(e.target.value || "1", 10))))}
+            className="w-24"
+          />
+          <Button onClick={() => gen.mutate()} disabled={gen.isPending}>
+            {gen.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Generate
+          </Button>
+          <span className="font-mono text-[10px] text-muted-foreground">codes are copied to your clipboard</span>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border bg-card">
@@ -445,6 +518,91 @@ function TagsPanel() {
               <span className="font-mono text-xs text-muted-foreground">{t.slug}</span>
             </div>
             <button onClick={() => del(t.id)} className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function AnalyticsPanel() {
+  const q = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_stats");
+      if (error) throw error;
+      return data as { ok: boolean; users: number; banned: number; premium: number; views: number; clicks: number; codes_used: number; codes_available: number; signups_30d: { day: string; n: number }[] | null };
+    },
+  });
+  if (q.isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
+  const s = q.data;
+  if (!s?.ok) return <p className="text-sm text-muted-foreground">Could not load stats.</p>;
+  const max = Math.max(1, ...(s.signups_30d ?? []).map((d) => d.n));
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Stat label="Users" value={s.users} accent="text-blue-400" />
+        <Stat label="Premium" value={s.premium} accent="text-yellow-400" />
+        <Stat label="Banned" value={s.banned} accent="text-red-400" />
+        <Stat label="Total views" value={s.views.toLocaleString()} accent="text-green-400" />
+        <Stat label="Link clicks" value={s.clicks.toLocaleString()} accent="text-purple-400" />
+        <Stat label="Codes used" value={s.codes_used} accent="text-orange-400" />
+        <Stat label="Codes available" value={s.codes_available} accent="text-emerald-400" />
+      </div>
+      <div className="rounded-md border border-border bg-card p-4">
+        <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+          <BarChart3 className="h-3.5 w-3.5" /> Signups — last 30 days
+        </div>
+        <div className="mt-3 flex h-32 items-end gap-1">
+          {(s.signups_30d ?? []).map((d) => (
+            <div key={d.day} className="flex-1" title={`${d.day}: ${d.n}`}>
+              <div className="w-full rounded-sm bg-foreground/70" style={{ height: `${(d.n / max) * 100}%` }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReservedPanel() {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const q = useQuery({
+    queryKey: ["reserved-usernames"],
+    queryFn: async () => {
+      const { data } = await supabase.from("reserved_usernames").select("name").order("name");
+      return (data ?? []) as { name: string }[];
+    },
+  });
+  async function add() {
+    const n = name.trim().toLowerCase();
+    if (!n) return;
+    const { error } = await supabase.from("reserved_usernames").insert({ name: n });
+    if (error) return toast.error(error.message);
+    setName("");
+    qc.invalidateQueries({ queryKey: ["reserved-usernames"] });
+  }
+  async function del(n: string) {
+    const { error } = await supabase.from("reserved_usernames").delete().eq("name", n);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["reserved-usernames"] });
+  }
+  return (
+    <div className="space-y-3">
+      <div className="rounded-md border border-border bg-card p-4">
+        <Label className="font-mono text-xs">Add reserved username</Label>
+        <div className="mt-2 flex gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="settings" />
+          <Button onClick={add}><Plus className="h-4 w-4" /> Add</Button>
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {(q.data ?? []).map((r) => (
+          <div key={r.name} className="flex items-center justify-between rounded-md border border-border bg-card p-3">
+            <span className="font-mono text-sm">{r.name}</span>
+            <button onClick={() => del(r.name)} className="text-muted-foreground hover:text-destructive">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>

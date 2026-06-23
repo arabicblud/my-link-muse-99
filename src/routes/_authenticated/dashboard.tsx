@@ -16,15 +16,19 @@ import {
   THEME_PRESETS,
   BACKGROUND_EFFECTS,
   ENTRANCE_ANIMATIONS,
+  USERNAME_EFFECTS,
+  CURSOR_EFFECTS,
+  BUTTON_THEMES,
+  BUTTON_LAYOUTS,
   type Profile,
   type LinkRow,
   type Tag,
 } from "@/lib/link-page";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock, Shield } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LogOut, Copy, Sparkles, Lock, Shield, Eye, MousePointer2, IdCard, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — linq" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Linqed" }] }),
   component: Dashboard,
 });
 
@@ -127,7 +131,7 @@ function Dashboard() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="font-mono text-base font-semibold">
-              linq<span className="text-muted-foreground">/</span>
+              linqed<span className="text-muted-foreground">/</span>
             </Link>
             <a
               href={`/${profile.username}`}
@@ -135,7 +139,7 @@ function Dashboard() {
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground"
             >
-              linq.site.je/{profile.username}
+              linqed/{profile.username}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -168,6 +172,7 @@ function Dashboard() {
         <div>
           <Tabs defaultValue="links">
             <TabsList className="font-mono">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="links">Links</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="theme">Theme</TabsTrigger>
@@ -178,6 +183,9 @@ function Dashboard() {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="overview" className="mt-4">
+              <OverviewPanel profile={profile} />
+            </TabsContent>
             <TabsContent value="links" className="mt-4">
               <LinksEditor profileId={userId} links={links} onChange={() => linksQ.refetch()} />
             </TabsContent>
@@ -249,7 +257,7 @@ function UsernameSetup({ userId, onDone }: { userId: string; onDone: () => void 
         <h1 className="text-xl font-semibold">Pick a username</h1>
         <p className="mt-1 text-sm text-muted-foreground">This will be your public URL.</p>
         <div className="mt-5 flex items-center rounded-sm border border-input bg-background">
-          <span className="pl-3 font-mono text-sm text-muted-foreground">linq.site.je/</span>
+          <span className="pl-3 font-mono text-sm text-muted-foreground">linqed/</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
@@ -271,12 +279,21 @@ function ProfileEditor({ profile, onSaved, userId }: { profile: Profile; onSaved
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatar, setAvatar] = useState(profile.avatar_url ?? "");
   const [location, setLocation] = useState(profile.location ?? "");
+  const [aliases, setAliases] = useState(profile.aliases ?? "");
+  const [discord, setDiscord] = useState(profile.discord_id ?? "");
 
   const m = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName, bio, avatar_url: avatar || null, location: location || null })
+        .update({
+          display_name: displayName,
+          bio,
+          avatar_url: avatar || null,
+          location: location || null,
+          aliases: aliases || null,
+          discord_id: discord || null,
+        })
         .eq("id", profile.id);
       if (error) throw error;
     },
@@ -307,6 +324,15 @@ function ProfileEditor({ profile, onSaved, userId }: { profile: Profile; onSaved
         <div>
           <Label className="font-mono text-xs">Location (optional)</Label>
           <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Paris, FR" className="mt-1" />
+        </div>
+        <div>
+          <Label className="font-mono text-xs">Aliases (small text under your description)</Label>
+          <Input value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="Founder of Linqed" className="mt-1" />
+        </div>
+        <div>
+          <Label className="font-mono text-xs">Discord server invite (optional)</Label>
+          <Input value={discord} onChange={(e) => setDiscord(e.target.value)} placeholder="https://discord.gg/..." className="mt-1" />
+          <p className="mt-1 font-mono text-[10px] text-muted-foreground">Live presence requires a bot token — coming soon. For now we link the invite.</p>
         </div>
         <div>
           <Label className="font-mono text-xs">Bio</Label>
@@ -450,6 +476,21 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
   const [showViews, setShowViews] = useState(profile.show_views);
   const [cardEnabled, setCardEnabled] = useState(profile.card_enabled);
   const [cardTilt, setCardTilt] = useState(profile.card_tilt);
+  const [hideViews, setHideViews] = useState(profile.hide_views);
+  const [seoTitle, setSeoTitle] = useState(profile.seo_title ?? "");
+  const [seoDesc, setSeoDesc] = useState(profile.seo_description ?? "");
+  const [tabIcon, setTabIcon] = useState(profile.tab_icon_url ?? "");
+  const [usernameEffect, setUsernameEffect] = useState(profile.username_effect ?? "none");
+  const [nameGradient, setNameGradient] = useState(profile.name_gradient ?? "");
+  const [banner, setBanner] = useState(profile.banner_url ?? "");
+  const [cursorEffect, setCursorEffect] = useState(profile.cursor_effect ?? "none");
+  const [forceTag, setForceTag] = useState(profile.force_tag_color ?? "");
+  const [freezeVideo, setFreezeVideo] = useState(profile.freeze_video_last_frame);
+  const [cardWidth, setCardWidth] = useState(profile.card_width ?? 28);
+  const [buttonTheme, setButtonTheme] = useState(profile.button_theme ?? "default");
+  const [buttonLayout, setButtonLayout] = useState(profile.button_layout ?? "stack");
+  const [musicAutoplay, setMusicAutoplay] = useState(profile.music_autoplay ?? true);
+  const [musicVolume, setMusicVolume] = useState(profile.music_volume ?? 60);
 
   const premium = profile.is_premium;
 
@@ -459,20 +500,35 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
         .from("profiles")
         .update({
           tagline: tagline || null,
-          typewriter_enabled: typewriter,
+          typewriter_enabled: premium ? typewriter : false,
           page_title: pageTitle || null,
           page_description: pageDesc || null,
-          background_image_url: premium ? bgImage || null : null,
-          audio_url: premium ? audio || null : null,
-          cursor_url: premium ? cursor || null : null,
+          background_image_url: bgImage || null,
+          audio_url: audio || null,
+          cursor_url: cursor || null,
           background_effect: effect,
-          entrance_animation: anim,
+          entrance_animation: premium ? anim : "fade",
           card_opacity: opacity,
           card_blur: premium ? blur : 0,
           icon_glow_color: premium ? glow || null : null,
           show_views: showViews,
+          hide_views: premium ? hideViews : false,
           card_enabled: cardEnabled,
           card_tilt: premium ? cardTilt : false,
+          seo_title: premium ? seoTitle || null : null,
+          seo_description: premium ? seoDesc || null : null,
+          tab_icon_url: premium ? tabIcon || null : null,
+          username_effect: premium ? usernameEffect : "none",
+          name_gradient: premium ? nameGradient || null : null,
+          banner_url: premium ? banner || null : null,
+          cursor_effect: premium ? cursorEffect : "none",
+          force_tag_color: premium ? forceTag || null : null,
+          freeze_video_last_frame: premium ? freezeVideo : false,
+          card_width: premium ? cardWidth : 28,
+          button_theme: premium ? buttonTheme : "default",
+          button_layout: premium ? buttonLayout : "stack",
+          music_autoplay: musicAutoplay,
+          music_volume: Math.max(0, Math.min(100, musicVolume)),
         })
         .eq("id", profile.id);
       if (error) throw error;
@@ -500,8 +556,40 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
           <Input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="building things" />
         </Field>
         <label className="flex items-center gap-2 font-mono text-xs">
-          <Switch checked={typewriter} onCheckedChange={setTypewriter} /> Typewriter effect
+          <Switch disabled={!premium} checked={typewriter} onCheckedChange={setTypewriter} />
+          Typewriter effect {!premium && <Lock className="h-3 w-3" />}
         </label>
+      </Section>
+
+      <Section title="Media (free)">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AssetUpload
+            userId={userId} kind="bg" value={bgImage || null}
+            onChange={(u) => setBgImage(u ?? "")}
+            accept="image/*,video/*,.gif" label="Background (image / gif / video)"
+            preview={bgImage && /\.(mp4|webm|mov)(\?|$)/i.test(bgImage) ? "video" : "image"}
+          />
+          <AssetUpload
+            userId={userId} kind="audio" value={audio || null}
+            onChange={(u) => setAudio(u ?? "")}
+            accept="audio/*" label="Profile audio (mp3 / ogg)"
+            preview="audio"
+          />
+          <AssetUpload
+            userId={userId} kind="cursor" value={cursor || null}
+            onChange={(u) => setCursor(u ?? "")}
+            accept="image/png,image/x-icon" label="Custom cursor (PNG)"
+            preview="cursor"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch checked={musicAutoplay} onCheckedChange={setMusicAutoplay} /> Music autoplay
+          </label>
+          <Field label={`Default volume — ${musicVolume}%`}>
+            <input type="range" min={0} max={100} value={musicVolume} onChange={(e) => setMusicVolume(+e.target.value)} className="w-full" />
+          </Field>
+        </div>
       </Section>
 
       <Section title="Effects">
@@ -511,8 +599,8 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
               {BACKGROUND_EFFECTS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
             </select>
           </Field>
-          <Field label="Entrance animation">
-            <select value={anim} onChange={(e) => setAnim(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm">
+          <Field label={`Entrance animation${!premium ? " (Premium)" : ""}`}>
+            <select disabled={!premium} value={anim} onChange={(e) => setAnim(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
               {ENTRANCE_ANIMATIONS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
             </select>
           </Field>
@@ -520,15 +608,21 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
         <Field label={`Card opacity — ${opacity}%`}>
           <input type="range" min={20} max={100} value={opacity} onChange={(e) => setOpacity(+e.target.value)} className="w-full" />
         </Field>
-        <label className="flex items-center gap-2 font-mono text-xs">
-          <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
+          </label>
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch disabled={!premium} checked={hideViews} onCheckedChange={setHideViews} />
+            Hide views (Premium)
+          </label>
+        </div>
         <label className="flex items-center gap-2 font-mono text-xs">
           <Switch checked={cardEnabled} onCheckedChange={setCardEnabled} /> Show profile card frame (guns.lol style)
         </label>
       </Section>
 
-      <Section title={<span className="flex items-center gap-2">Premium customization {!premium && <Lock className="h-3 w-3" />}</span>}>
+      <Section title={<span className="flex items-center gap-2">Premium customisation {!premium && <Lock className="h-3 w-3" />}</span>}>
         {!premium && (
           <p className="rounded-sm border border-dashed border-border p-3 font-mono text-xs text-muted-foreground">
             Unlock with a premium code in the Premium tab.
@@ -536,35 +630,75 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           <AssetUpload
-            userId={userId} kind="bg" value={bgImage || null}
-            onChange={(u) => setBgImage(u ?? "")}
-            accept="image/*,video/*,.gif" label="Background (image / gif / video)"
-            preview={bgImage && /\.(mp4|webm|mov)(\?|$)/i.test(bgImage) ? "video" : "image"}
+            userId={userId} kind="banner" value={banner || null}
+            onChange={(u) => setBanner(u ?? "")}
+            accept="image/*,.gif" label="Banner (card frame top)"
             disabled={!premium}
           />
           <AssetUpload
-            userId={userId} kind="audio" value={audio || null}
-            onChange={(u) => setAudio(u ?? "")}
-            accept="audio/*" label="Profile audio (mp3 / ogg)"
-            preview="audio" disabled={!premium}
+            userId={userId} kind="tabicon" value={tabIcon || null}
+            onChange={(u) => setTabIcon(u ?? "")}
+            accept="image/png,image/x-icon" label="Browser tab icon (favicon)"
+            disabled={!premium}
           />
-          <AssetUpload
-            userId={userId} kind="cursor" value={cursor || null}
-            onChange={(u) => setCursor(u ?? "")}
-            accept="image/png,image/x-icon" label="Custom cursor (PNG)"
-            preview="cursor" disabled={!premium}
-          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="SEO title">
+            <Input disabled={!premium} value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="@yourname — links" />
+          </Field>
+          <Field label="SEO description">
+            <Input disabled={!premium} value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} />
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Username effect">
+            <select disabled={!premium} value={usernameEffect} onChange={(e) => setUsernameEffect(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {USERNAME_EFFECTS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Cursor effect">
+            <select disabled={!premium} value={cursorEffect} onChange={(e) => setCursorEffect(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {CURSOR_EFFECTS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Name gradient (csv hex)">
+            <Input disabled={!premium} value={nameGradient} onChange={(e) => setNameGradient(e.target.value)} placeholder="#ff5e5b,#ffd166" />
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Button theme">
+            <select disabled={!premium} value={buttonTheme} onChange={(e) => setButtonTheme(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {BUTTON_THEMES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Button layout">
+            <select disabled={!premium} value={buttonLayout} onChange={(e) => setButtonLayout(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {BUTTON_LAYOUTS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Force all tags to colour">
+            <Input disabled={!premium} value={forceTag} onChange={(e) => setForceTag(e.target.value)} placeholder="#ff00aa" />
+          </Field>
         </div>
         <Field label={`Card blur — ${blur}px`}>
           <input disabled={!premium} type="range" min={0} max={20} value={blur} onChange={(e) => setBlur(+e.target.value)} className="w-full" />
         </Field>
+        <Field label={`Card width — ${cardWidth}rem`}>
+          <input disabled={!premium} type="range" min={22} max={48} value={cardWidth} onChange={(e) => setCardWidth(+e.target.value)} className="w-full" />
+        </Field>
         <Field label="Avatar glow color">
           <Input disabled={!premium} value={glow} onChange={(e) => setGlow(e.target.value)} placeholder="#ff00aa" />
         </Field>
-        <label className="flex items-center gap-2 font-mono text-xs">
-          <Switch disabled={!premium} checked={cardTilt} onCheckedChange={setCardTilt} />
-          3D tilt card on mouse hover
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch disabled={!premium} checked={cardTilt} onCheckedChange={setCardTilt} />
+            3D tilt card on mouse hover
+          </label>
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch disabled={!premium} checked={freezeVideo} onCheckedChange={setFreezeVideo} />
+            Freeze video on last frame
+          </label>
+        </div>
       </Section>
 
       <Button onClick={() => m.mutate()} disabled={m.isPending}>
@@ -642,7 +776,7 @@ function PremiumPanel({ profile, onChange }: { profile: Profile; onChange: () =>
           <h2 className="text-lg font-semibold">Unlock Premium</h2>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Background images, profile audio, custom cursors, card blur, avatar glow.
+          Unlock every visual flourish on Linqed.
         </p>
       </div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -659,6 +793,98 @@ function PremiumPanel({ profile, onChange }: { profile: Profile; onChange: () =>
       <p className="font-mono text-xs text-muted-foreground">
         Codes are single-use. Once redeemed they can't be used again.
       </p>
+      <PremiumPerks />
+    </div>
+  );
+}
+
+function PremiumPerks() {
+  const perks = [
+    "Custom SEO title & description",
+    "Custom browser tab icon (favicon)",
+    "Username effects (glow, rainbow, glitch)",
+    "Gradient display name",
+    "Profile card frame + banner image",
+    "3D tilt card on mouse hover",
+    "Custom card frame (opacity, blur, glow)",
+    "Cursor effects (trail, sparkle)",
+    "Hide views counter",
+    "Force a single colour on all your tags",
+    "Freeze video backgrounds on the last frame",
+    "Extra button themes & layouts",
+    "Entrance animations",
+    "Typewriter tagline effect",
+    "Resizable card width",
+  ];
+  return (
+    <div className="rounded-md border border-dashed border-border p-4">
+      <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Everything Premium gives you</h3>
+      <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+        {perks.map((p) => (
+          <li key={p} className="flex items-start gap-2 text-sm">
+            <Check className="mt-0.5 h-3.5 w-3.5 text-yellow-400" />
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function OverviewPanel({ profile }: { profile: Profile }) {
+  const clicksQ = useQuery({
+    queryKey: ["my-clicks", profile.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("link_clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("profile_id", profile.id);
+      return count ?? 0;
+    },
+  });
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Stat icon={<IdCard className="h-4 w-4" />} label="UID" value={profile.uid ?? "—"} />
+        <Stat icon={<Eye className="h-4 w-4" />} label="Views" value={profile.view_count.toLocaleString()} />
+        <Stat icon={<MousePointer2 className="h-4 w-4" />} label="Link clicks" value={(clicksQ.data ?? 0).toLocaleString()} />
+        <Stat icon={<Sparkles className="h-4 w-4" />} label="Plan" value={profile.is_premium ? "Premium ★" : "Free"} />
+      </div>
+      <div className="rounded-md border border-border bg-card p-6">
+        <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Public profile</h3>
+        <div className="mt-3 flex items-center justify-between">
+          <a
+            href={`/${profile.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-sm hover:underline"
+          >
+            linqed/{profile.username}
+          </a>
+          <span className="font-mono text-xs text-muted-foreground">
+            joined {profile.premium_expires_at ? new Date(profile.premium_expires_at).toLocaleDateString() : ""}
+          </span>
+        </div>
+        {profile.is_premium && profile.premium_expires_at && (
+          <p className="mt-2 font-mono text-xs text-yellow-400">
+            Premium until {new Date(profile.premium_expires_at).toLocaleDateString()}
+          </p>
+        )}
+        {profile.is_premium && !profile.premium_expires_at && (
+          <p className="mt-2 font-mono text-xs text-yellow-400">Premium — lifetime</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4">
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        {icon} {label}
+      </div>
+      <div className="mt-2 font-mono text-lg font-semibold">{value}</div>
     </div>
   );
 }

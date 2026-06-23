@@ -29,7 +29,29 @@ export type Profile = {
   card_tilt: boolean;
   location: string | null;
   premium_expires_at: string | null;
+  // extras (all rows have these after the migration; nullable defaults handled DB-side)
+  aliases: string | null;
+  banner_url: string | null;
+  discord_id: string | null;
+  username_effect: string;
+  name_gradient: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  tab_icon_url: string | null;
+  cursor_effect: string;
+  force_tag_color: string | null;
+  hide_views: boolean;
+  freeze_video_last_frame: boolean;
+  card_width: number;
+  button_theme: string;
+  button_layout: string;
+  music_autoplay: boolean;
+  music_volume: number;
+  uid: string | null;
+  banned_at: string | null;
 };
+
+export type FullProfile = Profile;
 
 export type LinkRow = {
   id: string;
@@ -48,6 +70,7 @@ export type Tag = {
   color: string;
   icon: string | null;
   description: string | null;
+  icon_url?: string | null;
 };
 
 export type ProfileTag = {
@@ -91,4 +114,31 @@ export const ENTRANCE_ANIMATIONS = [
   { value: "slide-up", label: "Slide up" },
   { value: "zoom", label: "Zoom" },
   { value: "none", label: "None" },
+];
+
+export const USERNAME_EFFECTS = [
+  { value: "none", label: "None" },
+  { value: "glow", label: "Glow" },
+  { value: "rainbow", label: "Rainbow" },
+  { value: "glitch", label: "Glitch" },
+];
+
+export const CURSOR_EFFECTS = [
+  { value: "none", label: "None" },
+  { value: "trail", label: "Trail" },
+  { value: "sparkle", label: "Sparkle" },
+];
+
+export const BUTTON_THEMES = [
+  { value: "default", label: "Default" },
+  { value: "soft", label: "Soft" },
+  { value: "neon", label: "Neon" },
+  { value: "glass", label: "Glass" },
+  { value: "sharp", label: "Sharp" },
+];
+
+export const BUTTON_LAYOUTS = [
+  { value: "stack", label: "Stack" },
+  { value: "grid-2", label: "2-col grid" },
+  { value: "pill", label: "Pill row" },
 ];
