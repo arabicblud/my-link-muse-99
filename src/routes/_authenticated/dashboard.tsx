@@ -476,6 +476,21 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
   const [showViews, setShowViews] = useState(profile.show_views);
   const [cardEnabled, setCardEnabled] = useState(profile.card_enabled);
   const [cardTilt, setCardTilt] = useState(profile.card_tilt);
+  const [hideViews, setHideViews] = useState(profile.hide_views);
+  const [seoTitle, setSeoTitle] = useState(profile.seo_title ?? "");
+  const [seoDesc, setSeoDesc] = useState(profile.seo_description ?? "");
+  const [tabIcon, setTabIcon] = useState(profile.tab_icon_url ?? "");
+  const [usernameEffect, setUsernameEffect] = useState(profile.username_effect ?? "none");
+  const [nameGradient, setNameGradient] = useState(profile.name_gradient ?? "");
+  const [banner, setBanner] = useState(profile.banner_url ?? "");
+  const [cursorEffect, setCursorEffect] = useState(profile.cursor_effect ?? "none");
+  const [forceTag, setForceTag] = useState(profile.force_tag_color ?? "");
+  const [freezeVideo, setFreezeVideo] = useState(profile.freeze_video_last_frame);
+  const [cardWidth, setCardWidth] = useState(profile.card_width ?? 28);
+  const [buttonTheme, setButtonTheme] = useState(profile.button_theme ?? "default");
+  const [buttonLayout, setButtonLayout] = useState(profile.button_layout ?? "stack");
+  const [musicAutoplay, setMusicAutoplay] = useState(profile.music_autoplay ?? true);
+  const [musicVolume, setMusicVolume] = useState(profile.music_volume ?? 60);
 
   const premium = profile.is_premium;
 
@@ -485,20 +500,35 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
         .from("profiles")
         .update({
           tagline: tagline || null,
-          typewriter_enabled: typewriter,
+          typewriter_enabled: premium ? typewriter : false,
           page_title: pageTitle || null,
           page_description: pageDesc || null,
-          background_image_url: premium ? bgImage || null : null,
-          audio_url: premium ? audio || null : null,
-          cursor_url: premium ? cursor || null : null,
+          background_image_url: bgImage || null,
+          audio_url: audio || null,
+          cursor_url: cursor || null,
           background_effect: effect,
-          entrance_animation: anim,
+          entrance_animation: premium ? anim : "fade",
           card_opacity: opacity,
           card_blur: premium ? blur : 0,
           icon_glow_color: premium ? glow || null : null,
           show_views: showViews,
+          hide_views: premium ? hideViews : false,
           card_enabled: cardEnabled,
           card_tilt: premium ? cardTilt : false,
+          seo_title: premium ? seoTitle || null : null,
+          seo_description: premium ? seoDesc || null : null,
+          tab_icon_url: premium ? tabIcon || null : null,
+          username_effect: premium ? usernameEffect : "none",
+          name_gradient: premium ? nameGradient || null : null,
+          banner_url: premium ? banner || null : null,
+          cursor_effect: premium ? cursorEffect : "none",
+          force_tag_color: premium ? forceTag || null : null,
+          freeze_video_last_frame: premium ? freezeVideo : false,
+          card_width: premium ? cardWidth : 28,
+          button_theme: premium ? buttonTheme : "default",
+          button_layout: premium ? buttonLayout : "stack",
+          music_autoplay: musicAutoplay,
+          music_volume: Math.max(0, Math.min(100, musicVolume)),
         })
         .eq("id", profile.id);
       if (error) throw error;
@@ -526,8 +556,40 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
           <Input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="building things" />
         </Field>
         <label className="flex items-center gap-2 font-mono text-xs">
-          <Switch checked={typewriter} onCheckedChange={setTypewriter} /> Typewriter effect
+          <Switch disabled={!premium} checked={typewriter} onCheckedChange={setTypewriter} />
+          Typewriter effect {!premium && <Lock className="h-3 w-3" />}
         </label>
+      </Section>
+
+      <Section title="Media (free)">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AssetUpload
+            userId={userId} kind="bg" value={bgImage || null}
+            onChange={(u) => setBgImage(u ?? "")}
+            accept="image/*,video/*,.gif" label="Background (image / gif / video)"
+            preview={bgImage && /\.(mp4|webm|mov)(\?|$)/i.test(bgImage) ? "video" : "image"}
+          />
+          <AssetUpload
+            userId={userId} kind="audio" value={audio || null}
+            onChange={(u) => setAudio(u ?? "")}
+            accept="audio/*" label="Profile audio (mp3 / ogg)"
+            preview="audio"
+          />
+          <AssetUpload
+            userId={userId} kind="cursor" value={cursor || null}
+            onChange={(u) => setCursor(u ?? "")}
+            accept="image/png,image/x-icon" label="Custom cursor (PNG)"
+            preview="cursor"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch checked={musicAutoplay} onCheckedChange={setMusicAutoplay} /> Music autoplay
+          </label>
+          <Field label={`Default volume — ${musicVolume}%`}>
+            <input type="range" min={0} max={100} value={musicVolume} onChange={(e) => setMusicVolume(+e.target.value)} className="w-full" />
+          </Field>
+        </div>
       </Section>
 
       <Section title="Effects">
@@ -537,8 +599,8 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
               {BACKGROUND_EFFECTS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
             </select>
           </Field>
-          <Field label="Entrance animation">
-            <select value={anim} onChange={(e) => setAnim(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm">
+          <Field label={`Entrance animation${!premium ? " (Premium)" : ""}`}>
+            <select disabled={!premium} value={anim} onChange={(e) => setAnim(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
               {ENTRANCE_ANIMATIONS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
             </select>
           </Field>
@@ -546,15 +608,21 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
         <Field label={`Card opacity — ${opacity}%`}>
           <input type="range" min={20} max={100} value={opacity} onChange={(e) => setOpacity(+e.target.value)} className="w-full" />
         </Field>
-        <label className="flex items-center gap-2 font-mono text-xs">
-          <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch checked={showViews} onCheckedChange={setShowViews} /> Show view counter
+          </label>
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch disabled={!premium} checked={hideViews} onCheckedChange={setHideViews} />
+            Hide views (Premium)
+          </label>
+        </div>
         <label className="flex items-center gap-2 font-mono text-xs">
           <Switch checked={cardEnabled} onCheckedChange={setCardEnabled} /> Show profile card frame (guns.lol style)
         </label>
       </Section>
 
-      <Section title={<span className="flex items-center gap-2">Premium customization {!premium && <Lock className="h-3 w-3" />}</span>}>
+      <Section title={<span className="flex items-center gap-2">Premium customisation {!premium && <Lock className="h-3 w-3" />}</span>}>
         {!premium && (
           <p className="rounded-sm border border-dashed border-border p-3 font-mono text-xs text-muted-foreground">
             Unlock with a premium code in the Premium tab.
@@ -562,35 +630,75 @@ function CustomizeEditor({ profile, onSaved, userId }: { profile: Profile; onSav
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           <AssetUpload
-            userId={userId} kind="bg" value={bgImage || null}
-            onChange={(u) => setBgImage(u ?? "")}
-            accept="image/*,video/*,.gif" label="Background (image / gif / video)"
-            preview={bgImage && /\.(mp4|webm|mov)(\?|$)/i.test(bgImage) ? "video" : "image"}
+            userId={userId} kind="banner" value={banner || null}
+            onChange={(u) => setBanner(u ?? "")}
+            accept="image/*,.gif" label="Banner (card frame top)"
             disabled={!premium}
           />
           <AssetUpload
-            userId={userId} kind="audio" value={audio || null}
-            onChange={(u) => setAudio(u ?? "")}
-            accept="audio/*" label="Profile audio (mp3 / ogg)"
-            preview="audio" disabled={!premium}
+            userId={userId} kind="tabicon" value={tabIcon || null}
+            onChange={(u) => setTabIcon(u ?? "")}
+            accept="image/png,image/x-icon" label="Browser tab icon (favicon)"
+            disabled={!premium}
           />
-          <AssetUpload
-            userId={userId} kind="cursor" value={cursor || null}
-            onChange={(u) => setCursor(u ?? "")}
-            accept="image/png,image/x-icon" label="Custom cursor (PNG)"
-            preview="cursor" disabled={!premium}
-          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="SEO title">
+            <Input disabled={!premium} value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="@yourname — links" />
+          </Field>
+          <Field label="SEO description">
+            <Input disabled={!premium} value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} />
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Username effect">
+            <select disabled={!premium} value={usernameEffect} onChange={(e) => setUsernameEffect(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {USERNAME_EFFECTS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Cursor effect">
+            <select disabled={!premium} value={cursorEffect} onChange={(e) => setCursorEffect(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {CURSOR_EFFECTS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Name gradient (csv hex)">
+            <Input disabled={!premium} value={nameGradient} onChange={(e) => setNameGradient(e.target.value)} placeholder="#ff5e5b,#ffd166" />
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Button theme">
+            <select disabled={!premium} value={buttonTheme} onChange={(e) => setButtonTheme(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {BUTTON_THEMES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Button layout">
+            <select disabled={!premium} value={buttonLayout} onChange={(e) => setButtonLayout(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              {BUTTON_LAYOUTS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Force all tags to colour">
+            <Input disabled={!premium} value={forceTag} onChange={(e) => setForceTag(e.target.value)} placeholder="#ff00aa" />
+          </Field>
         </div>
         <Field label={`Card blur — ${blur}px`}>
           <input disabled={!premium} type="range" min={0} max={20} value={blur} onChange={(e) => setBlur(+e.target.value)} className="w-full" />
         </Field>
+        <Field label={`Card width — ${cardWidth}rem`}>
+          <input disabled={!premium} type="range" min={22} max={48} value={cardWidth} onChange={(e) => setCardWidth(+e.target.value)} className="w-full" />
+        </Field>
         <Field label="Avatar glow color">
           <Input disabled={!premium} value={glow} onChange={(e) => setGlow(e.target.value)} placeholder="#ff00aa" />
         </Field>
-        <label className="flex items-center gap-2 font-mono text-xs">
-          <Switch disabled={!premium} checked={cardTilt} onCheckedChange={setCardTilt} />
-          3D tilt card on mouse hover
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch disabled={!premium} checked={cardTilt} onCheckedChange={setCardTilt} />
+            3D tilt card on mouse hover
+          </label>
+          <label className="flex items-center gap-2 font-mono text-xs">
+            <Switch disabled={!premium} checked={freezeVideo} onCheckedChange={setFreezeVideo} />
+            Freeze video on last frame
+          </label>
+        </div>
       </Section>
 
       <Button onClick={() => m.mutate()} disabled={m.isPending}>
