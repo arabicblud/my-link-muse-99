@@ -532,15 +532,25 @@ function CustomCursorImage({ src }: { src: string }) {
 
 function NameDisplay({ text, gradient, effect }: { text: string; gradient: string | null; effect: string }) {
   const hasGradient = !!gradient && gradient.trim().length > 0;
-  const gradImage = hasGradient
-    ? `linear-gradient(90deg, ${gradient!.split(",").map((s) => s.trim()).filter(Boolean).join(", ")})`
-    : null;
-  // Effect classes — kept compatible with gradient by using background-clip:text on the inner span.
-  const effectCls =
-    effect === "glow" ? "linq-effect-glow"
-    : effect === "rainbow" ? "linq-effect-rainbow"
-    : effect === "glitch" ? "linq-effect-glitch"
-    : "";
+  let gradImage: string | null = null;
+  if (hasGradient) {
+    const stops = gradient!.split(",").map((s) => s.trim()).filter(Boolean);
+    // Repeat the gradient so an animated background-position can scroll smoothly.
+    gradImage = `linear-gradient(90deg, ${[...stops, ...stops].join(", ")})`;
+  }
+  const baseCls = "mt-5 text-xl font-semibold tracking-tight";
+  let cls = baseCls;
+  if (hasGradient) {
+    cls += " " + (effect === "rainbow" ? "linq-grad-rainbow"
+      : effect === "glow" ? "linq-grad-glow"
+      : effect === "glitch" ? "linq-grad-glitch"
+      : "");
+  } else {
+    cls += " " + (effect === "rainbow" ? "linq-effect-rainbow"
+      : effect === "glow" ? "linq-effect-glow"
+      : effect === "glitch" ? "linq-effect-glitch"
+      : "");
+  }
   const style: React.CSSProperties = gradImage
     ? {
         backgroundImage: gradImage,
@@ -550,7 +560,5 @@ function NameDisplay({ text, gradient, effect }: { text: string; gradient: strin
         WebkitTextFillColor: "transparent",
       }
     : {};
-  // The "rainbow" effect uses an animated gradient — let it override a static gradient unless gradient is set.
-  const cls = `mt-5 text-xl font-semibold tracking-tight ${hasGradient && effect === "rainbow" ? "linq-effect-glow" : effectCls}`;
-  return <h1 className={cls} style={style}>{text}</h1>;
+  return <h1 className={cls.trim()} style={style}>{text}</h1>;
 }
