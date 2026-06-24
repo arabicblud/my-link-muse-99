@@ -467,30 +467,90 @@ function BackgroundEffect({ type, color }: { type: string; color: string }) {
 }
 
 function CursorEffect({ kind, color }: { kind: string; color: string }) {
-  const [points, setPoints] = useState<{ x: number; y: number; id: number }[]>([]);
+  const palette = ["#ff5e5b", "#ffd166", "#06d6a0", "#118ab2", "#a78bfa", "#f472b6"];
+  const [points, setPoints] = useState<{ x: number; y: number; id: number; born: number; c: string }[]>([]);
   useEffect(() => {
     let id = 0;
+    const life = kind === "sparkle" ? 900 : kind === "rainbow" ? 1100 : 650;
     function onMove(e: MouseEvent) {
-      const next = { x: e.clientX, y: e.clientY, id: id++ };
-      setPoints((p) => [...p.slice(-15), next]);
-      setTimeout(() => setPoints((p) => p.filter((x) => x.id !== next.id)), kind === "sparkle" ? 700 : 400);
+      const c = kind === "rainbow" ? palette[id % palette.length] : color;
+      const next = { x: e.clientX, y: e.clientY, id: id++, born: performance.now(), c };
+      setPoints((p) => [...p.slice(-40), next]);
+      window.setTimeout(() => setPoints((p) => p.filter((x) => x.id !== next.id)), life);
     }
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, [kind]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, color]);
   return (
-    <div className="pointer-events-none fixed inset-0 z-50">
-      {points.map((p) => (
-        <span key={p.id} style={{
-          position: "absolute", left: p.x - 4, top: p.y - 4,
-          width: kind === "sparkle" ? 8 : 6, height: kind === "sparkle" ? 8 : 6,
-          borderRadius: kind === "sparkle" ? 2 : "9999px",
-          background: color, opacity: 0.8,
-          boxShadow: `0 0 12px ${color}`,
-          transform: kind === "sparkle" ? "rotate(45deg)" : undefined,
-          transition: "opacity .4s",
-        }} />
-      ))}
+    <div className="pointer-events-none fixed inset-0 z-[60]">
+      {points.map((p, i) => {
+        const age = (i + 1) / points.length; // 0..1, newest = 1
+        const size = kind === "sparkle" ? 6 + age * 6 : 4 + age * 8;
+        const op = 0.15 + age * 0.7;
+        return (
+          <span key={p.id} style={{
+            position: "absolute", left: p.x - size / 2, top: p.y - size / 2,
+            width: size, height: size,
+            borderRadius: kind === "sparkle" ? 2 : "9999px",
+            background: p.c, opacity: op,
+            boxShadow: `0 0 ${size * 2}px ${p.c}`,
+            transform: kind === "sparkle" ? `rotate(${(p.id * 23) % 360}deg)` : undefined,
+            transition: "opacity .35s ease-out, width .35s ease-out, height .35s ease-out",
+          }} />
+        );
+      })}
     </div>
   );
+}
+
+function CustomCursorImage({ src }: { src: string }) {
+  const ref = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    let x = -100, y = -100;
+    function onMove(e: MouseEvent) {
+      x = e.clientX; y = e.clientY;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const n = ref.current;
+        if (n) n.style.transform = `translate3d(${x - 8}px, ${y - 8}px, 0)`;
+      });
+    }
+    window.addEventListener("mousemove", onMove);
+    return () => { window.removeEventListener("mousemove", onMove); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+  return (
+    <img
+      ref={ref} src={src} alt=""
+      className="pointer-events-none fixed left-0 top-0 z-[70] h-8 w-8 select-none"
+      style={{ transform: "translate3d(-100px,-100px,0)" }}
+    />
+  );
+}
+
+function NameDisplay({ text, gradient, effect }: { text: string; gradient: string | null; effect: string }) {
+  const hasGradient = !!gradient && gradient.trim().length > 0;
+  const gradImage = hasGradient
+    ? `linear-gradient(90deg, ${gradient!.split(",").map((s) => s.trim()).filter(Boolean).join(", ")})`
+    : null;
+  // Effect classes — kept compatible with gradient by using background-clip:text on the inner span.
+  const effectCls =
+    effect === "glow" ? "linq-effect-glow"
+    : effect === "rainbow" ? "linq-effect-rainbow"
+    : effect === "glitch" ? "linq-effect-glitch"
+    : "";
+  const style: React.CSSProperties = gradImage
+    ? {
+        backgroundImage: gradImage,
+        WebkitBackgroundClip: "text",
+        backgroundClip: "text",
+        color: "transparent",
+        WebkitTextFillColor: "transparent",
+      }
+    : {};
+  // The "rainbow" effect uses an animated gradient — let it override a static gradient unless gradient is set.
+  const cls = `mt-5 text-xl font-semibold tracking-tight ${hasGradient && effect === "rainbow" ? "linq-effect-glow" : effectCls}`;
+  return <h1 className={cls} style={style}>{text}</h1>;
 }
