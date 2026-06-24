@@ -196,3 +196,9 @@
 .linq-effect-glow { text-shadow: 0 0 12px currentColor, 0 0 24px currentColor; }
 .linq-effect-rainbow { animation: linq-rainbow 4s linear infinite; }
 .linq-effect-glitch { animation: linq-glitch .6s steps(2) infinite; }
+
+/* Gradient-aware variants: animate the gradient itself so the text keeps its gradient fill */
+@keyframes linq-grad-shift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+.linq-grad-rainbow { background-size: 200% 100%; animation: linq-grad-shift 4s linear infinite; }
+.linq-grad-glow { filter: drop-shadow(0 0 10px rgba(255,255,255,.45)); }
+.linq-grad-glitch { animation: linq-glitch .6s steps(2) infinite; }
