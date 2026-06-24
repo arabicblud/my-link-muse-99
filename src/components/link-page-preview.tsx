@@ -61,19 +61,7 @@ export function LinkPagePreview({
     : "flex flex-col gap-3";
   const cardWidth = profile.card_enabled && profile.card_width
     ? Math.max(20, Math.min(56, profile.card_width)) : 28;
-  const nameStyle: React.CSSProperties = profile.name_gradient
-    ? {
-        backgroundImage: `linear-gradient(90deg, ${profile.name_gradient.split(",").map(s=>s.trim()).join(", ")})`,
-        WebkitBackgroundClip: "text",
-        backgroundClip: "text",
-        color: "transparent",
-      }
-    : {};
-  const nameEffectCls = !profile.is_premium ? "" :
-    profile.username_effect === "glow" ? "linq-effect-glow"
-    : profile.username_effect === "rainbow" ? "linq-effect-rainbow"
-    : profile.username_effect === "glitch" ? "linq-effect-glitch"
-    : "";
+  // (name styling moved into <NameDisplay/>)
 
   return (
     <div
@@ -255,17 +243,18 @@ function ProfileCard({
         const r = node.getBoundingClientRect();
         const x = (e.clientX - r.left) / r.width - 0.5;
         const y = (e.clientY - r.top) / r.height - 0.5;
-        node.style.transform = `perspective(900px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
+        const max = 14;
+        node.style.transform = `perspective(900px) rotateY(${x * max}deg) rotateX(${-y * max}deg) scale(1.02)`;
       });
     }
     function onLeave() {
       const node = ref.current;
-      if (node) node.style.transform = "perspective(900px) rotateY(0) rotateX(0)";
+      if (node) node.style.transform = "perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)";
     }
-    window.addEventListener("mousemove", onMove);
+    el.addEventListener("mousemove", onMove);
     el.addEventListener("mouseleave", onLeave);
     return () => {
-      window.removeEventListener("mousemove", onMove);
+      el.removeEventListener("mousemove", onMove);
       el.removeEventListener("mouseleave", onLeave);
       cancelAnimationFrame(raf);
     };
@@ -275,8 +264,9 @@ function ProfileCard({
     <div
       ref={ref}
       style={{
-        transition: tilt ? "transform .15s ease-out" : undefined,
+        transition: tilt ? "transform .12s ease-out" : undefined,
         transformStyle: "preserve-3d",
+        willChange: tilt ? "transform" : undefined,
         width: `${widthRem}rem`,
         maxWidth: "92vw",
         ...(enabled
