@@ -440,22 +440,35 @@ function ThemeEditor({ profile, onSaved }: { profile: Profile; onSaved: () => vo
 }
 
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  // Inline chroma wheel (no native eyedropper popup). Click the swatch to open the wheel.
+  // Lazy import to avoid SSR issues.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { HexColorPicker } = require("react-colorful") as typeof import("react-colorful");
+  const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#ffffff";
   return (
     <div>
       <Label className="font-mono text-xs">{label}</Label>
-      <div className="mt-1 flex items-center gap-2 rounded-sm border border-input bg-background p-1">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-10 cursor-pointer rounded-sm border-0 bg-transparent"
-        />
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-transparent font-mono text-xs outline-none"
-        />
-      </div>
+      <Popover>
+        <div className="mt-1 flex items-center gap-2 rounded-sm border border-input bg-background p-1">
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Pick ${label}`}
+              className="h-8 w-10 cursor-pointer rounded-sm border border-border"
+              style={{ background: safe }}
+            />
+          </PopoverTrigger>
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-transparent font-mono text-xs outline-none"
+          />
+        </div>
+        <PopoverContent className="w-auto p-3" align="start">
+          <HexColorPicker color={safe} onChange={onChange} />
+          <div className="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{value}</div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
