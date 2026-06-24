@@ -441,7 +441,6 @@ export type Database = {
           card_width: number | null
           cursor_effect: string | null
           cursor_url: string | null
-          discord_id: string | null
           display_name: string | null
           entrance_animation: string | null
           font_family: string | null
@@ -488,7 +487,6 @@ export type Database = {
           card_width?: number | null
           cursor_effect?: string | null
           cursor_url?: string | null
-          discord_id?: string | null
           display_name?: string | null
           entrance_animation?: string | null
           font_family?: string | null
@@ -535,7 +533,6 @@ export type Database = {
           card_width?: number | null
           cursor_effect?: string | null
           cursor_url?: string | null
-          discord_id?: string | null
           display_name?: string | null
           entrance_animation?: string | null
           font_family?: string | null
