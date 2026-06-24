@@ -442,10 +442,6 @@ function ThemeEditor({ profile, onSaved }: { profile: Profile; onSaved: () => vo
 }
 
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  // Inline chroma wheel (no native eyedropper popup). Click the swatch to open the wheel.
-  // Lazy import to avoid SSR issues.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { HexColorPicker } = require("react-colorful") as typeof import("react-colorful");
   const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#ffffff";
   return (
     <div>
