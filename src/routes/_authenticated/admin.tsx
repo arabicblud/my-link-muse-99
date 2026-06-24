@@ -538,7 +538,27 @@ function AnalyticsPanel() {
   if (q.isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
   const s = q.data;
   if (!s?.ok) return <p className="text-sm text-muted-foreground">Could not load stats.</p>;
-  const max = Math.max(1, ...(s.signups_30d ?? []).map((d) => d.n));
+  // Build a contiguous 30-day series, filling missing days with 0
+  const today = new Date();
+  const byDay = new Map<string, number>();
+  for (const d of s.signups_30d ?? []) byDay.set(d.day, d.n);
+  const series: { day: string; n: number }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    series.push({ day: key, n: byDay.get(key) ?? 0 });
+  }
+  const max = Math.max(1, ...series.map((d) => d.n));
+  const W = 600, H = 140, P = 8;
+  const stepX = (W - P * 2) / Math.max(1, series.length - 1);
+  const pts = series.map((d, i) => {
+    const x = P + i * stepX;
+    const y = H - P - (d.n / max) * (H - P * 2);
+    return { x, y, d };
+  });
+  const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area = `${path} L${pts[pts.length-1].x.toFixed(1)},${H - P} L${pts[0].x.toFixed(1)},${H - P} Z`;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-4">
@@ -551,15 +571,28 @@ function AnalyticsPanel() {
         <Stat label="Codes available" value={s.codes_available} accent="text-emerald-400" />
       </div>
       <div className="rounded-md border border-border bg-card p-4">
-        <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-          <BarChart3 className="h-3.5 w-3.5" /> Signups — last 30 days
+        <div className="flex items-center justify-between gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+          <span className="flex items-center gap-2"><BarChart3 className="h-3.5 w-3.5" /> Signups — last 30 days</span>
+          <span>peak {max}</span>
         </div>
-        <div className="mt-3 flex h-32 items-end gap-1">
-          {(s.signups_30d ?? []).map((d) => (
-            <div key={d.day} className="flex-1" title={`${d.day}: ${d.n}`}>
-              <div className="w-full rounded-sm bg-foreground/70" style={{ height: `${(d.n / max) * 100}%` }} />
-            </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="signupFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={area} fill="url(#signupFill)" className="text-foreground" />
+          <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" className="text-foreground" />
+          {pts.map((p) => (
+            <circle key={p.d.day} cx={p.x} cy={p.y} r={p.d.n > 0 ? 2 : 1.2} fill="currentColor" className="text-foreground">
+              <title>{`${p.d.day}: ${p.d.n}`}</title>
+            </circle>
           ))}
+        </svg>
+        <div className="mt-1 flex justify-between font-mono text-[10px] text-muted-foreground">
+          <span>{series[0].day}</span>
+          <span>{series[series.length - 1].day}</span>
         </div>
       </div>
     </div>

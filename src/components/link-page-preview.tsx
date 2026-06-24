@@ -46,9 +46,11 @@ export function LinkPagePreview({
       : "animate-[linq-fade_.5s_ease-out_both]";
 
   const cardStyle: React.CSSProperties = { color: profile.text_color };
-  const cursorStyle: React.CSSProperties = profile.cursor_url
-    ? { cursor: `url(${profile.cursor_url}) 8 8, auto` }
-    : {};
+  // When a custom cursor image is set OR a cursor effect is active, we hide the
+  // native cursor everywhere on the page and render the cursor ourselves so it
+  // can be styled and tracked freely.
+  const hideNativeCursor = !!profile.cursor_url || (profile.is_premium && !!profile.cursor_effect && profile.cursor_effect !== "none");
+  const cursorStyle: React.CSSProperties = hideNativeCursor ? { cursor: "none" } : {};
 
   const isVideoBg = !!profile.background_image_url && /\.(mp4|webm|mov)(\?|$)/i.test(profile.background_image_url);
   const verifiedTag = tags.find((t) => t.slug === "verified");
@@ -59,19 +61,7 @@ export function LinkPagePreview({
     : "flex flex-col gap-3";
   const cardWidth = profile.card_enabled && profile.card_width
     ? Math.max(20, Math.min(56, profile.card_width)) : 28;
-  const nameStyle: React.CSSProperties = profile.name_gradient
-    ? {
-        backgroundImage: `linear-gradient(90deg, ${profile.name_gradient.split(",").map(s=>s.trim()).join(", ")})`,
-        WebkitBackgroundClip: "text",
-        backgroundClip: "text",
-        color: "transparent",
-      }
-    : {};
-  const nameEffectCls = !profile.is_premium ? "" :
-    profile.username_effect === "glow" ? "linq-effect-glow"
-    : profile.username_effect === "rainbow" ? "linq-effect-rainbow"
-    : profile.username_effect === "glitch" ? "linq-effect-glitch"
-    : "";
+  // (name styling moved into <NameDisplay/>)
 
   return (
     <div
@@ -90,6 +80,7 @@ export function LinkPagePreview({
         <VideoBackground src={profile.background_image_url!} freeze={profile.freeze_video_last_frame && profile.is_premium} />
       )}
       <BackgroundEffect type={profile.background_effect} color={profile.accent_color} />
+      {profile.cursor_url && <CustomCursorImage src={profile.cursor_url} />}
       {profile.audio_url && (
         <AudioPlayer src={profile.audio_url} autoplay={profile.music_autoplay !== false} volume={profile.music_volume ?? 60} />
       )}
@@ -132,12 +123,11 @@ export function LinkPagePreview({
           )}
         </div>
 
-        <h1
-          className={`mt-5 text-xl font-semibold tracking-tight ${nameEffectCls}`}
-          style={nameStyle}
-        >
-          {profile.display_name || profile.username}
-        </h1>
+        <NameDisplay
+          text={profile.display_name || profile.username}
+          gradient={profile.name_gradient}
+          effect={profile.is_premium ? profile.username_effect : ""}
+        />
         <p className="mt-1 flex items-center gap-1 text-sm opacity-60">
           @{profile.username}
           {verifiedTag && (
@@ -253,17 +243,18 @@ function ProfileCard({
         const r = node.getBoundingClientRect();
         const x = (e.clientX - r.left) / r.width - 0.5;
         const y = (e.clientY - r.top) / r.height - 0.5;
-        node.style.transform = `perspective(900px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
+        const max = 14;
+        node.style.transform = `perspective(900px) rotateY(${x * max}deg) rotateX(${-y * max}deg) scale(1.02)`;
       });
     }
     function onLeave() {
       const node = ref.current;
-      if (node) node.style.transform = "perspective(900px) rotateY(0) rotateX(0)";
+      if (node) node.style.transform = "perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)";
     }
-    window.addEventListener("mousemove", onMove);
+    el.addEventListener("mousemove", onMove);
     el.addEventListener("mouseleave", onLeave);
     return () => {
-      window.removeEventListener("mousemove", onMove);
+      el.removeEventListener("mousemove", onMove);
       el.removeEventListener("mouseleave", onLeave);
       cancelAnimationFrame(raf);
     };
@@ -273,8 +264,9 @@ function ProfileCard({
     <div
       ref={ref}
       style={{
-        transition: tilt ? "transform .15s ease-out" : undefined,
+        transition: tilt ? "transform .12s ease-out" : undefined,
         transformStyle: "preserve-3d",
+        willChange: tilt ? "transform" : undefined,
         width: `${widthRem}rem`,
         maxWidth: "92vw",
         ...(enabled
@@ -475,30 +467,98 @@ function BackgroundEffect({ type, color }: { type: string; color: string }) {
 }
 
 function CursorEffect({ kind, color }: { kind: string; color: string }) {
-  const [points, setPoints] = useState<{ x: number; y: number; id: number }[]>([]);
+  const palette = ["#ff5e5b", "#ffd166", "#06d6a0", "#118ab2", "#a78bfa", "#f472b6"];
+  const [points, setPoints] = useState<{ x: number; y: number; id: number; born: number; c: string }[]>([]);
   useEffect(() => {
     let id = 0;
+    const life = kind === "sparkle" ? 900 : kind === "rainbow" ? 1100 : 650;
     function onMove(e: MouseEvent) {
-      const next = { x: e.clientX, y: e.clientY, id: id++ };
-      setPoints((p) => [...p.slice(-15), next]);
-      setTimeout(() => setPoints((p) => p.filter((x) => x.id !== next.id)), kind === "sparkle" ? 700 : 400);
+      const c = kind === "rainbow" ? palette[id % palette.length] : color;
+      const next = { x: e.clientX, y: e.clientY, id: id++, born: performance.now(), c };
+      setPoints((p) => [...p.slice(-40), next]);
+      window.setTimeout(() => setPoints((p) => p.filter((x) => x.id !== next.id)), life);
     }
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, [kind]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, color]);
   return (
-    <div className="pointer-events-none fixed inset-0 z-50">
-      {points.map((p) => (
-        <span key={p.id} style={{
-          position: "absolute", left: p.x - 4, top: p.y - 4,
-          width: kind === "sparkle" ? 8 : 6, height: kind === "sparkle" ? 8 : 6,
-          borderRadius: kind === "sparkle" ? 2 : "9999px",
-          background: color, opacity: 0.8,
-          boxShadow: `0 0 12px ${color}`,
-          transform: kind === "sparkle" ? "rotate(45deg)" : undefined,
-          transition: "opacity .4s",
-        }} />
-      ))}
+    <div className="pointer-events-none fixed inset-0 z-[60]">
+      {points.map((p, i) => {
+        const age = (i + 1) / points.length; // 0..1, newest = 1
+        const size = kind === "sparkle" ? 6 + age * 6 : 4 + age * 8;
+        const op = 0.15 + age * 0.7;
+        return (
+          <span key={p.id} style={{
+            position: "absolute", left: p.x - size / 2, top: p.y - size / 2,
+            width: size, height: size,
+            borderRadius: kind === "sparkle" ? 2 : "9999px",
+            background: p.c, opacity: op,
+            boxShadow: `0 0 ${size * 2}px ${p.c}`,
+            transform: kind === "sparkle" ? `rotate(${(p.id * 23) % 360}deg)` : undefined,
+            transition: "opacity .35s ease-out, width .35s ease-out, height .35s ease-out",
+          }} />
+        );
+      })}
     </div>
   );
+}
+
+function CustomCursorImage({ src }: { src: string }) {
+  const ref = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    let x = -100, y = -100;
+    function onMove(e: MouseEvent) {
+      x = e.clientX; y = e.clientY;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const n = ref.current;
+        if (n) n.style.transform = `translate3d(${x - 8}px, ${y - 8}px, 0)`;
+      });
+    }
+    window.addEventListener("mousemove", onMove);
+    return () => { window.removeEventListener("mousemove", onMove); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+  return (
+    <img
+      ref={ref} src={src} alt=""
+      className="pointer-events-none fixed left-0 top-0 z-[70] h-8 w-8 select-none"
+      style={{ transform: "translate3d(-100px,-100px,0)" }}
+    />
+  );
+}
+
+function NameDisplay({ text, gradient, effect }: { text: string; gradient: string | null; effect: string }) {
+  const hasGradient = !!gradient && gradient.trim().length > 0;
+  let gradImage: string | null = null;
+  if (hasGradient) {
+    const stops = gradient!.split(",").map((s) => s.trim()).filter(Boolean);
+    // Repeat the gradient so an animated background-position can scroll smoothly.
+    gradImage = `linear-gradient(90deg, ${[...stops, ...stops].join(", ")})`;
+  }
+  const baseCls = "mt-5 text-xl font-semibold tracking-tight";
+  let cls = baseCls;
+  if (hasGradient) {
+    cls += " " + (effect === "rainbow" ? "linq-grad-rainbow"
+      : effect === "glow" ? "linq-grad-glow"
+      : effect === "glitch" ? "linq-grad-glitch"
+      : "");
+  } else {
+    cls += " " + (effect === "rainbow" ? "linq-effect-rainbow"
+      : effect === "glow" ? "linq-effect-glow"
+      : effect === "glitch" ? "linq-effect-glitch"
+      : "");
+  }
+  const style: React.CSSProperties = gradImage
+    ? {
+        backgroundImage: gradImage,
+        WebkitBackgroundClip: "text",
+        backgroundClip: "text",
+        color: "transparent",
+        WebkitTextFillColor: "transparent",
+      }
+    : {};
+  return <h1 className={cls.trim()} style={style}>{text}</h1>;
 }

@@ -47,8 +47,8 @@ export type Profile = {
   button_layout: string;
   music_autoplay: boolean;
   music_volume: number;
-  uid: string | null;
-  banned_at: string | null;
+  uid?: string | null;
+  banned_at?: string | null;
 };
 
 export type FullProfile = Profile;

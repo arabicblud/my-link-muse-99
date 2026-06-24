@@ -429,7 +429,6 @@ export type Database = {
           background_color: string | null
           background_effect: string | null
           background_image_url: string | null
-          banned_at: string | null
           banner_url: string | null
           bio: string | null
           button_layout: string | null
@@ -465,7 +464,6 @@ export type Database = {
           text_color: string | null
           theme: string | null
           typewriter_enabled: boolean | null
-          uid: string | null
           username: string | null
           username_effect: string | null
           view_count: number | null
@@ -478,7 +476,6 @@ export type Database = {
           background_color?: string | null
           background_effect?: string | null
           background_image_url?: string | null
-          banned_at?: string | null
           banner_url?: string | null
           bio?: string | null
           button_layout?: string | null
@@ -514,7 +511,6 @@ export type Database = {
           text_color?: string | null
           theme?: string | null
           typewriter_enabled?: boolean | null
-          uid?: string | null
           username?: string | null
           username_effect?: string | null
           view_count?: never
@@ -527,7 +523,6 @@ export type Database = {
           background_color?: string | null
           background_effect?: string | null
           background_image_url?: string | null
-          banned_at?: string | null
           banner_url?: string | null
           bio?: string | null
           button_layout?: string | null
@@ -563,7 +558,6 @@ export type Database = {
           text_color?: string | null
           theme?: string | null
           typewriter_enabled?: boolean | null
-          uid?: string | null
           username?: string | null
           username_effect?: string | null
           view_count?: never

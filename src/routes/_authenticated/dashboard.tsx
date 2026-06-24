@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { HexColorPicker } from "react-colorful";
 import { LinkPagePreview } from "@/components/link-page-preview";
 import { AssetUpload } from "@/components/asset-upload";
 import {
@@ -440,22 +442,31 @@ function ThemeEditor({ profile, onSaved }: { profile: Profile; onSaved: () => vo
 }
 
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#ffffff";
   return (
     <div>
       <Label className="font-mono text-xs">{label}</Label>
-      <div className="mt-1 flex items-center gap-2 rounded-sm border border-input bg-background p-1">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-10 cursor-pointer rounded-sm border-0 bg-transparent"
-        />
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-transparent font-mono text-xs outline-none"
-        />
-      </div>
+      <Popover>
+        <div className="mt-1 flex items-center gap-2 rounded-sm border border-input bg-background p-1">
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Pick ${label}`}
+              className="h-8 w-10 cursor-pointer rounded-sm border border-border"
+              style={{ background: safe }}
+            />
+          </PopoverTrigger>
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-transparent font-mono text-xs outline-none"
+          />
+        </div>
+        <PopoverContent className="w-auto p-3" align="start">
+          <HexColorPicker color={safe} onChange={onChange} />
+          <div className="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{value}</div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
