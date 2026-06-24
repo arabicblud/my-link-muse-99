@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { HexColorPicker } from "react-colorful";
 import { LinkPagePreview } from "@/components/link-page-preview";
 import { AssetUpload } from "@/components/asset-upload";
 import {
