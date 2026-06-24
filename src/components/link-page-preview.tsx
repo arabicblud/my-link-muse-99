@@ -46,9 +46,11 @@ export function LinkPagePreview({
       : "animate-[linq-fade_.5s_ease-out_both]";
 
   const cardStyle: React.CSSProperties = { color: profile.text_color };
-  const cursorStyle: React.CSSProperties = profile.cursor_url
-    ? { cursor: `url(${profile.cursor_url}) 8 8, auto` }
-    : {};
+  // When a custom cursor image is set OR a cursor effect is active, we hide the
+  // native cursor everywhere on the page and render the cursor ourselves so it
+  // can be styled and tracked freely.
+  const hideNativeCursor = !!profile.cursor_url || (profile.is_premium && !!profile.cursor_effect && profile.cursor_effect !== "none");
+  const cursorStyle: React.CSSProperties = hideNativeCursor ? { cursor: "none" } : {};
 
   const isVideoBg = !!profile.background_image_url && /\.(mp4|webm|mov)(\?|$)/i.test(profile.background_image_url);
   const verifiedTag = tags.find((t) => t.slug === "verified");
@@ -90,6 +92,7 @@ export function LinkPagePreview({
         <VideoBackground src={profile.background_image_url!} freeze={profile.freeze_video_last_frame && profile.is_premium} />
       )}
       <BackgroundEffect type={profile.background_effect} color={profile.accent_color} />
+      {profile.cursor_url && <CustomCursorImage src={profile.cursor_url} />}
       {profile.audio_url && (
         <AudioPlayer src={profile.audio_url} autoplay={profile.music_autoplay !== false} volume={profile.music_volume ?? 60} />
       )}
@@ -132,12 +135,11 @@ export function LinkPagePreview({
           )}
         </div>
 
-        <h1
-          className={`mt-5 text-xl font-semibold tracking-tight ${nameEffectCls}`}
-          style={nameStyle}
-        >
-          {profile.display_name || profile.username}
-        </h1>
+        <NameDisplay
+          text={profile.display_name || profile.username}
+          gradient={profile.name_gradient}
+          effect={profile.is_premium ? profile.username_effect : ""}
+        />
         <p className="mt-1 flex items-center gap-1 text-sm opacity-60">
           @{profile.username}
           {verifiedTag && (
