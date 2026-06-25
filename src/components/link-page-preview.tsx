@@ -49,7 +49,9 @@ export function LinkPagePreview({
   // When a custom cursor image is set OR a cursor effect is active, we hide the
   // native cursor everywhere on the page and render the cursor ourselves so it
   // can be styled and tracked freely.
-  const hideNativeCursor = !!profile.cursor_url || (profile.is_premium && !!profile.cursor_effect && profile.cursor_effect !== "none");
+  // Only hide the native cursor when a custom cursor IMAGE is set. Trail/sparkle
+  // effects render alongside the normal cursor.
+  const hideNativeCursor = !!profile.cursor_url;
   const cursorStyle: React.CSSProperties = hideNativeCursor ? { cursor: "none" } : {};
 
   const isVideoBg = !!profile.background_image_url && /\.(mp4|webm|mov)(\?|$)/i.test(profile.background_image_url);
@@ -236,35 +238,40 @@ function ProfileCard({
     if (!el) return;
     let raf = 0;
     function onMove(e: MouseEvent) {
-      cancelAnimationFrame(raf);
+      if (raf) return;
       raf = requestAnimationFrame(() => {
+        raf = 0;
         const node = ref.current;
         if (!node) return;
         const r = node.getBoundingClientRect();
-        const x = (e.clientX - r.left) / r.width - 0.5;
-        const y = (e.clientY - r.top) / r.height - 0.5;
-        const max = 14;
-        node.style.transform = `perspective(900px) rotateY(${x * max}deg) rotateX(${-y * max}deg) scale(1.02)`;
+        // Track across a comfortable area around the card (1.5x its size).
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (r.width * 0.75)));
+        const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (r.height * 0.75)));
+        const max = 22;
+        node.style.transform = `rotateY(${nx * max}deg) rotateX(${-ny * max}deg) translateZ(0)`;
       });
     }
     function onLeave() {
       const node = ref.current;
-      if (node) node.style.transform = "perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)";
+      if (node) node.style.transform = "rotateY(0deg) rotateX(0deg)";
     }
-    el.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseleave", onLeave);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseleave", onLeave);
     return () => {
-      el.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseleave", onLeave);
-      cancelAnimationFrame(raf);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseleave", onLeave);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, [tilt]);
 
   return (
+    <div style={{ perspective: tilt ? "1200px" : undefined }}>
     <div
       ref={ref}
       style={{
-        transition: tilt ? "transform .12s ease-out" : undefined,
+        transition: tilt ? "transform .15s ease-out" : undefined,
         transformStyle: "preserve-3d",
         willChange: tilt ? "transform" : undefined,
         width: `${widthRem}rem`,
@@ -283,6 +290,7 @@ function ProfileCard({
       className={`relative z-10 flex flex-col items-center px-6 py-12 ${className}`}
     >
       {children}
+    </div>
     </div>
   );
 }
