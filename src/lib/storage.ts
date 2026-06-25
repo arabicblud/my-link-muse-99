@@ -1,8 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const BUCKET = "user-assets";
-// 10 years — long-lived signed URL stored in DB. Re-issued on every upload.
-const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 10;
 
 export type UploadedAsset = { url: string; path: string };
 
@@ -17,11 +15,11 @@ export async function uploadUserAsset(
     .from(BUCKET)
     .upload(path, file, { cacheControl: "31536000", upsert: true, contentType: file.type });
   if (upErr) throw upErr;
-  const { data, error: signErr } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL);
-  if (signErr || !data) throw signErr ?? new Error("Could not sign URL");
-  return { url: data.signedUrl, path };
+  // Profile assets are public (a read policy on storage.objects allows anon SELECT
+  // on this bucket). Use the unsigned public URL so we don't leak time-bounded
+  // signed URLs through the publicly readable profiles table.
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return { url: data.publicUrl, path };
 }
 
 export function isImage(file: File) {
