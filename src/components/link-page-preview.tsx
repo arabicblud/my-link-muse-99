@@ -49,7 +49,9 @@ export function LinkPagePreview({
   // When a custom cursor image is set OR a cursor effect is active, we hide the
   // native cursor everywhere on the page and render the cursor ourselves so it
   // can be styled and tracked freely.
-  const hideNativeCursor = !!profile.cursor_url || (profile.is_premium && !!profile.cursor_effect && profile.cursor_effect !== "none");
+  // Only hide the native cursor when a custom cursor IMAGE is set. Trail/sparkle
+  // effects render alongside the normal cursor.
+  const hideNativeCursor = !!profile.cursor_url;
   const cursorStyle: React.CSSProperties = hideNativeCursor ? { cursor: "none" } : {};
 
   const isVideoBg = !!profile.background_image_url && /\.(mp4|webm|mov)(\?|$)/i.test(profile.background_image_url);
